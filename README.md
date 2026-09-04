@@ -1,6 +1,6 @@
-# Auxweave
+# AuxWeave
 
-> **Agent-Native Collaborative Design Canvas powered by the W3C WebMCP Standard**
+> **Co-Creative Design Studio: Humans and AI Agents Designing Together on a Shared Canvas**
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-aux--weaver.vercel.app-22c55e.svg)](https://aux-weaver.vercel.app/)
@@ -8,130 +8,124 @@
 [![Built with TypeScript](https://img.shields.io/badge/Built_with-TypeScript-3178c6.svg)](https://www.typescriptlang.org/)
 [![React + Vite](https://img.shields.io/badge/Frontend-React_%2B_Vite-61dafb.svg)](https://vitejs.dev/)
 
-Auxweave is a browser-first vector design studio where **humans and AI agents co-create on the exact same live canvas in real-time**. Built on the emerging **W3C WebMCP (Web Model Context Protocol)** specification, Auxweave bridges the gap between direct spatial manipulation and autonomous AI design assistance.
+AuxWeave is a **browser-native vector design studio** where humans and AI agents co-create on a shared live canvas in real-time. It's built on the emerging **W3C WebMCP (Web Model Context Protocol)** standard, enabling AI to understand and manipulate design semantically—not just as pixels.
 
-🌐 **Live Application**: [https://aux-weaver.vercel.app/](https://aux-weaver.vercel.app/)
-
----
-
-## 💡 The Problem: Why Generative AI Design is Broken
-
-1. **The "Flat Bitmap" Dead-End**: Traditional text-to-image models (Midjourney, DALL-E) produce static PNG/JPEG files. Once generated, text cannot be edited, layers cannot be moved, and design elements cannot be resized or exported as vector code.
-2. **The "Coordinate Hallucination" Trap**: When LLMs try to place elements on coordinate-based design canvases, they are forced to do 2D bounding-box math in 1D text tokens. This causes endless calculation monologues, overlapping text blocks, and chopped-off canvas elements.
-3. **The Disconnected Chatbot**: AI design tools usually isolate the assistant in a side-chat that cannot perceive the user’s selection, active artboard dimensions, or visual moodboards.
+**🌐 Live Application**: [https://aux-weaver.vercel.app/](https://aux-weaver.vercel.app/)
 
 ---
 
-## ⚡ The WebMCP Solution
+## 🎯 What Problem Does AuxWeave Solve?
 
-Auxweave exposes the internal vector canvas directly to AI models using **`document.modelContext.registerTool()`**. 
+Traditional generative AI design tools have fundamental limitations:
 
-Instead of guessing coordinates or blindly clicking pixels, an agent inspects the active artboard and invokes high-level **Web-Native Layout Primitives** (Flexbox / Auto Layout) to construct production-ready posters, flyers, banners, and typography hierarchy.
+| Problem | AuxWeave Solution |
+|---------|------------------|
+| **Static Output**: DALL-E/Midjourney produce flat PNG files that can't be edited | Generate fully editable **vector designs** on the canvas |
+| **Coordinate Guessing**: LLMs struggle with 2D spatial reasoning in 1D tokens | Use **semantic layout primitives** (Flexbox/Auto Layout) instead of pixel math |
+| **Disconnected AI**: Chat-based assistants can't see selections or visual context | **Shared canvas** with real-time perception and editing |
+| **Limited Iteration**: Regenerating entire designs for small tweaks | **Human-AI collaboration**—AI creates, humans refine, AI learns context |
+
+---
+
+## ✨ How It Works
 
 ### The Co-Creation Loop
+
 ```
-   ┌────────────────────────────────────────────────────────┐
-   │                    Auxweave Canvas                     │
-   │   (Shared Live Scene Graph: Text, Shapes, Containers)  │
-   └───────────────┬────────────────────────▲───────────────┘
-                   │                        │
-       Live Visual Perception     Real-Time Tool Execution
-                   │                        │
-   ┌───────────────▼────────────────────────┴───────────────┐
-   │         W3C WebMCP Standard (document.modelContext)     │
-   │  create_flex_container | validate_layout | align_objects│
-   └───────────────▲────────────────────────▲───────────────┘
-                   │                        │
-           Local User Edits         AI Co-Designer
-       (Mouse, Keyboard, Touch)  (In-App or Chrome DevTools)
+  ┌─────────────────────────────────────────────────┐
+  │        Shared Auxweave Canvas                   │
+  │  (Live Scene Graph: Text, Shapes, Containers)   │
+  └──────────────┬──────────────────────┬───────────┘
+                 │                      │
+    Live Visual Perception    Real-Time Tool Execution
+                 │                      │
+  ┌──────────────▼──────────────────────▼───────────┐
+  │     W3C WebMCP (document.modelContext)          │
+  │  • create_flex_container                        │
+  │  • validate_layout • align_objects              │
+  │  • add_text_element • apply_color_palette       │
+  └──────────────▲──────────────────────▲───────────┘
+                 │                      │
+         Human Designer          AI Agent
+    (Click, Edit, Drag)     (Chrome DevTools / Embedded)
+```
+
+### Key Innovation: Web-Native Primitives
+
+Instead of blindly guessing coordinates, agents **declare semantic design intent**:
+
+```typescript
+// Agent tells Auxweave "I want a centered card with a headline and subtitle"
+// Auxweave handles responsive layout automatically
+create_flex_container({
+  direction: "column",
+  align: "center",
+  gap: 16,
+  padding: 24,
+  children: [
+    { type: "headline", text: "Hello, World!" },
+    { type: "body", text: "This is a description" }
+  ]
+})
 ```
 
 ---
 
-## 🌟 Key Capabilities
+## 🚀 Core Features
 
-### 1. Web-Native Layout Primitives (`create_flex_container`)
-Inspired by the **Paper.design** and **Figma Auto Layout** paradigms, agents do not manually compute Cartesian $x, y$ coordinates. They declare semantic component trees (`direction: 'column' | 'row'`, `gap`, `padding`, `justify`, `align`). Auxweave's deterministic layout solver calculates optical bounds, line wrapping, and spacing with sub-pixel perfection.
+### 1. **Web-Native Layout Engine**
+- **Flexbox-based primitives** inspired by Paper.design and Figma Auto Layout
+- Automatic child positioning—no manual coordinate math
+- Responsive containers that adapt to content
 
-### 2. Bi-Directional Collaboration
-Every object generated by the agent is a standard, editable `SceneObject`. When the agent creates a poster, the human designer can immediately click any headline to edit the copy, re-color a card with the color picker, or drag elements around. If the human selects an object, the agent perceives the selection through `get_selected_elements`.
+### 2. **Bi-Directional Editing**
+- Agent creates → Human edits → Agent refines
+- Every object is a standard `SceneObject` (fully interactive)
+- Real-time visual updates across both human and AI changes
 
-### 3. Automated Layout Quality Assurance (`validate_layout` & `repair_layout`)
-Auxweave includes an automated design auditor. Agents can check the canvas against typography balance rules, optical safety margins (4% frame), overlap detection, and WCAG color contrast guidelines (≥ 4.5:1), with one-click automated repair.
+### 3. **Automated Design QA**
+- `validate_layout`: Check for overlaps, contrast issues, boundary bleeds
+- `repair_layout`: Auto-fix collisions and unreadable text sizes
+- WCAG compliance checking
 
-### 4. Grounded in Visual Moodboards
-Users can pin inspiration photos and color palettes in the editor. Agents invoke `get_moodboard_content` and `place_moodboard_image` to sample dominant hex colors and place reference imagery into the layout.
+### 4. **Visual Moodboards**
+- Pin reference images and color palettes
+- `get_moodboard_content`: Sample dominant colors
+- `place_moodboard_image`: Reference visuals directly in designs
 
----
-
-## 🛠️ WebMCP Implementation
-
-Auxweave registers modular tools directly onto the browser's model context conforming to the official WebMCP specification:
-
-```javascript
-// Standard W3C WebMCP Registration in Auxweave
-document.modelContext.registerTool({
-  name: "create_flex_container",
-  description: "Creates a modern web-native flex layout container with automatic child positioning",
-  inputSchema: {
-    type: "object",
-    properties: {
-      direction: { type: "string", enum: ["column", "row"] },
-      justify: { type: "string", enum: ["start", "center", "end", "space-between"] },
-      align: { type: "string", enum: ["start", "center", "end", "stretch"] },
-      gap: { type: "number", description: "Pixel spacing between children" },
-      padding: { type: "number", description: "Inner padding in pixels" },
-      fillColor: { type: "string", description: "Card background color" },
-      children: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            type: { type: "string", enum: ["headline", "subtitle", "body", "badge", "icon", "shape", "container"] },
-            text: { type: "string" },
-            fillColor: { type: "string" }
-          },
-          required: ["type"]
-        }
-      }
-    },
-    required: ["children"]
-  },
-  execute: async (input) => {
-    // Computes layout & renders into Auxweave scene graph
-    return { success: true, containerId: "group-10492", childCount: 4 };
-  }
-});
-```
-
-### Complete WebMCP Tool Catalog
-
-| Tool Name | Category | Description |
-| :--- | :--- | :--- |
-| `create_flex_container` | **Layout** | Generates full layouts, sections, and cards using Flexbox primitives (`VStack`, `HStack`, `gap`, `padding`). |
-| `wrap_in_flex_container` | **Layout** | Groups loose canvas items into an aligned flex layout with consistent gutters. |
-| `apply_poster_template` | **Layout** | Instantiates balanced poster scaffolding based on curated typographic pairings. |
-| `add_text_element` | **Primitives** | Creates rich typography with automatic role-based proportional sizing. |
-| `add_shape_primitive` | **Primitives** | Adds vector shapes (rectangle, circle, polygon, star, line, arrow). |
-| `add_hugeicon_symbol` | **Primitives** | Inserts vector icons from Hugeicons with keyword search. |
-| `add_image_element` | **Primitives** | Places images onto the canvas with top-left or centered anchor bounds. |
-| `update_transform` | **Transform** | Mutates position, dimension, or rotation of selected elements. |
-| `align_objects` | **Transform** | Performs optical alignment (left, center, right, top, middle, bottom, distribute). |
-| `validate_layout` | **Design QA** | Scans canvas for overlaps, contrast issues, and boundary bleed. |
-| `repair_layout` | **Design QA** | Automatically resolves layout collisions and fixes unreadable font sizes. |
-| `apply_color_palette` | **Styling** | Applies harmonious color palettes to canvas backgrounds and foreground items. |
-| `get_canvas_scene_state`| **Inspection** | Returns live artboard dimensions and bounding boxes for all active objects. |
-| `get_document_metadata` | **Inspection** | Retrieves active document dimensions, active page, and background style. |
-| `get_selected_elements` | **Inspection** | Inspects currently selected elements on the canvas. |
-| `get_moodboard_content` | **Moodboard** | Fetches user-curated visual inspiration images and hex palettes. |
-| `place_moodboard_image` | **Moodboard** | Drops a moodboard reference image onto the canvas. |
+### 5. **Rich Asset Library**
+- 30,000+ Hugeicons vector icons
+- Unsplash image search integration
+- Custom shape primitives (rectangles, circles, polygons, stars, arrows)
 
 ---
 
-## 🚀 Quickstart & Local Setup
+## 🛠️ WebMCP Tools Available
+
+| Tool | Purpose |
+|------|---------|
+| `create_flex_container` | Build responsive layouts with Flexbox primitives |
+| `wrap_in_flex_container` | Group loose items into aligned layouts |
+| `apply_poster_template` | Typographic poster scaffolding |
+| `add_text_element` | Rich typography with role-based sizing |
+| `add_shape_primitive` | Vector shapes (rect, circle, polygon, star, line) |
+| `add_hugeicon_symbol` | Insert 30k+ vector icons |
+| `add_image_element` | Place images with anchor options |
+| `update_transform` | Mutate position, dimension, rotation |
+| `align_objects` | Optical alignment & distribution |
+| `validate_layout` | Design QA scanning |
+| `repair_layout` | Auto-fix layout issues |
+| `apply_color_palette` | Harmonious color schemes |
+| `get_canvas_scene_state` | Live artboard inspection |
+| `get_moodboard_content` | Reference images & palettes |
+
+---
+
+## 🎬 Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm
+- Node.js 18+
+- npm or yarn
 
 ### 1. Clone & Install
 ```bash
@@ -140,11 +134,11 @@ cd AuxWeave/frontend
 npm install
 ```
 
-### 2. Start the Development Server
+### 2. Start Development Server
 ```bash
 npm run dev
 ```
-Open **`https://aux-weaver.vercel.app/`** (or your local dev server at `http://localhost:3300`). Click **New Canvas** or open an existing design from `/files`.
+Open **`http://localhost:3300`** (or see terminal for local dev URL)
 
 ### 3. Build for Production
 ```bash
@@ -153,33 +147,99 @@ npm run build
 
 ---
 
-## 🧪 Testing WebMCP
+## 🧪 Testing with WebMCP
 
-### Method 1: Chrome DevTools WebMCP Panel (Official)
-1. Open Google Chrome with the [WebMCP Extension](https://github.com/GoogleChromeLabs/web-model-context-protocol) or run with `chrome://flags/#enable-webmcp-testing`.
-2. Open Auxweave live at [**`https://aux-weaver.vercel.app/create`**](https://aux-weaver.vercel.app/create) (or `http://localhost:3300/create` locally).
-3. Press `F12` and navigate to the **WebMCP** panel in DevTools.
-4. All 17 Auxweave tools will be listed live under `document.modelContext`.
-5. Execute any tool (e.g. `create_flex_container`) and watch the canvas update in real-time.
+### Option A: Chrome DevTools (Official WebMCP Panel)
+1. Open Chrome with [WebMCP Extension](https://github.com/GoogleChromeLabs/web-model-context-protocol)
+2. Navigate to [aux-weaver.vercel.app/create](https://aux-weaver.vercel.app/create)
+3. Press `F12` → **WebMCP** tab → See all tools listed
+4. Execute any tool and watch the canvas update in real-time
 
-### Method 2: Embedded AI Co-Designer Panel
-1. Inside the Auxweave editor, click the **Magic / Agent** icon in the right toolbar.
-2. Select your provider (**AgentRouter**, **Google Gemini**, **OpenRouter**, or **Nebius**) and enter an API key.
-3. Type: `"Create a modern dark event flyer for AUXWEAVE 2026 with a red accent"`.
-4. The agent executes `create_flex_container` in a single turn, rendering the composition directly on your artboard.
+### Option B: Embedded AI Agent Panel (In-App)
+1. Click the **Magic/Agent** icon in the toolbar
+2. Choose provider (AgentRouter, Google Gemini, OpenRouter, Nebius)
+3. Enter API key and prompt:
+   ```
+   "Create a modern dark event flyer for AUXWEAVE 2026 with red accents"
+   ```
+4. Watch the agent compose the design live
 
 ---
 
 ## 🏗️ Architecture
 
-- **Frontend**: React 19, TypeScript, Vite, TanStack Router, Tailwind CSS, Lucide / Hugeicons.
-- **Scene Engine**: Custom local-first vector scene graph (`SceneObject`, `SceneGroup`) backed by a lightweight Zustand store.
-- **Flex Solver**: Custom zero-dependency 1D/2D constraint solver in `flex-layout-solver.ts`.
-- **Protocol Bridge**: Standards-compliant WebMCP bridge (`webmcp-bridge.ts`, `webmcp-registry.ts`, `webmcp-editor-bridge.ts`) dispatching native `toolchange` events.
-- **Storage**: Browser-local IndexedDB persistence with JSON import/export and multi-page support.
+| Layer | Technology |
+|-------|-----------|
+| **Frontend Framework** | React 19 + TypeScript + Vite |
+| **Router** | TanStack Router (file-based routing) |
+| **Styling** | Tailwind CSS + Lucide/Hugeicons |
+| **State Management** | Zustand |
+| **Scene Graph** | Custom vector engine (`SceneObject`, `SceneGroup`) |
+| **Layout Solver** | Zero-dependency 1D/2D constraint solver |
+| **WebMCP Bridge** | Standards-compliant protocol bridge |
+| **Persistence** | Browser IndexedDB (JSON import/export) |
+| **Backend** | Lean Elysia API (CORS proxy, Unsplash, sponsorships) |
+
+---
+
+## 📦 What's Included
+
+```
+AuxWeave/
+├── frontend/          # React application (97% TypeScript)
+│   ├── src/
+│   │   ├── routes/    # File-based routing
+│   │   ├── components/# React components
+│   │   └── lib/       # WebMCP bridge, scene graph, flex solver
+│   └── package.json
+├── backend/           # Elysia API server
+│   └── package.json
+└── README.md
+```
+
+---
+
+## 🔌 Backend API Routes
+
+```
+GET  /health                      # Health check
+GET  /media/proxy?url=...         # CORS-safe image proxy
+GET  /unsplash/photos             # Featured photos
+GET  /unsplash/search             # Photo search
+GET  /unsplash/download           # Track downloads
+GET  /sponsor/config              # Sponsorship info
+POST /sponsor/checkout            # Paystack checkout
+GET  /sponsor/verify/:reference   # Payment verification
+```
+
+---
+
+## 🎨 Design Philosophy
+
+- **Local-First**: No auth required; everything persists in browser
+- **Open Standard**: Compliant with W3C WebMCP
+- **Developer-Friendly**: Modular tools, clean APIs, zero dependencies where possible
+- **AI-Aware**: Designed from the ground up for AI collaboration
+- **Accessible**: WCAG compliance checking built-in
 
 ---
 
 ## 📄 License
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-only)**. See [LICENSE](LICENSE) for details.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's bug reports, feature ideas, or code—open an issue or submit a PR.
+
+## 🔗 Resources
+
+- **Live App**: [aux-weaver.vercel.app](https://aux-weaver.vercel.app/)
+- **W3C WebMCP Spec**: [WebMCP Standard](https://github.com/N-lia/AuxWeave)
+- **Documentation**: See `/docs` folder for detailed guides
+
+---
+
+**Built with ❤️ for human-AI creative collaboration**
