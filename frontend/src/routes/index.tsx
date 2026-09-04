@@ -533,12 +533,6 @@ function Landing() {
               >
                 {primaryCtaLabel}
               </button>
-              <Link
-                to="/studio"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/[0.14] bg-white/85 px-8 py-3.5 text-base font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:border-black/[0.22] hover:bg-white sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
-              >
-                Auxweave Studio
-              </Link>
               <a
                 href="https://github.com/N-lia/AuxWeave"
                 target="_blank"

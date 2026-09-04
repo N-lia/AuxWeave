@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SponsorRouteImport } from './routes/sponsor'
 import { Route as RemoveBgRouteImport } from './routes/remove-bg'
 import { Route as FilesRouteImport } from './routes/files'
@@ -18,11 +17,6 @@ import { Route as CreateRouteImport } from './routes/create'
 import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as IndexRouteImport } from './routes/index'
 
-const StudioRoute = StudioRouteImport.update({
-  id: '/studio',
-  path: '/studio',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SponsorRoute = SponsorRouteImport.update({
   id: '/sponsor',
   path: '/sponsor',
@@ -67,7 +61,6 @@ export interface FileRoutesByFullPath {
   '/files': typeof FilesRoute
   '/remove-bg': typeof RemoveBgRoute
   '/sponsor': typeof SponsorRoute
-  '/studio': typeof StudioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,7 +70,6 @@ export interface FileRoutesByTo {
   '/files': typeof FilesRoute
   '/remove-bg': typeof RemoveBgRoute
   '/sponsor': typeof SponsorRoute
-  '/studio': typeof StudioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,7 +80,6 @@ export interface FileRoutesById {
   '/files': typeof FilesRoute
   '/remove-bg': typeof RemoveBgRoute
   '/sponsor': typeof SponsorRoute
-  '/studio': typeof StudioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,7 +91,6 @@ export interface FileRouteTypes {
     | '/files'
     | '/remove-bg'
     | '/sponsor'
-    | '/studio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -110,7 +100,6 @@ export interface FileRouteTypes {
     | '/files'
     | '/remove-bg'
     | '/sponsor'
-    | '/studio'
   id:
     | '__root__'
     | '/'
@@ -120,7 +109,6 @@ export interface FileRouteTypes {
     | '/files'
     | '/remove-bg'
     | '/sponsor'
-    | '/studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -131,18 +119,10 @@ export interface RootRouteChildren {
   FilesRoute: typeof FilesRoute
   RemoveBgRoute: typeof RemoveBgRoute
   SponsorRoute: typeof SponsorRoute
-  StudioRoute: typeof StudioRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/studio': {
-      id: '/studio'
-      path: '/studio'
-      fullPath: '/studio'
-      preLoaderRoute: typeof StudioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sponsor': {
       id: '/sponsor'
       path: '/sponsor'
@@ -203,7 +183,6 @@ const rootRouteChildren: RootRouteChildren = {
   FilesRoute: FilesRoute,
   RemoveBgRoute: RemoveBgRoute,
   SponsorRoute: SponsorRoute,
-  StudioRoute: StudioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
