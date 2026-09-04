@@ -3,12 +3,8 @@ import './load-env'
 import { cors } from '@elysiajs/cors'
 import { node } from '@elysiajs/node'
 import { Elysia } from 'elysia'
-import { auth } from './auth'
 import { env } from './config/env'
-import { sql } from './db'
 import { HttpError } from './lib/http'
-import { authPlugin } from './plugins/auth'
-import { documentsRoutes } from './routes/documents'
 import { mediaRoutes } from './routes/media'
 import { sponsorRoutes } from './routes/sponsor'
 import { unsplashRoutes } from './routes/unsplash'
@@ -26,11 +22,10 @@ const app = new Elysia({ adapter: node() })
     cors({
       origin: corsOrigins(env.CORS_ORIGIN),
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     }),
   )
-  .use(authPlugin)
   .onError(({ code, error, set }) => {
     if (error instanceof HttpError) {
       set.status = error.status
@@ -48,36 +43,39 @@ const app = new Elysia({ adapter: node() })
       }
     }
 
+    if (code === 'NOT_FOUND') {
+      set.status = 404
+      return {
+        error: 'Not found',
+      }
+    }
+
     console.error(error)
     set.status = 500
     return {
       error: 'Internal server error',
     }
   })
+
+const apiRoutes = new Elysia()
   .get('/', () => ({
     name: 'Auxweave-backend',
     status: 'ok',
   }))
-  .get('/health', async () => {
-    await sql`select 1`
-    return {
-      status: 'ok',
-      database: 'reachable',
-    }
-  })
-  .get('/session', async ({ request }) => {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    })
-
-    return {
-      data: session,
-    }
-  })
-  .use(documentsRoutes)
+  .get('/health', () => ({
+    status: 'ok',
+  }))
   .use(mediaRoutes)
   .use(sponsorRoutes)
   .use(unsplashRoutes)
-  .listen(env.PORT)
 
-console.log(`Auxweave backend running at ${app.server?.hostname}:${app.server?.port}`)
+app.use(apiRoutes)
+app.group('/api', group => group.use(apiRoutes))
+
+if (!process.env.VERCEL) {
+  app.listen(env.PORT)
+  console.log(`Auxweave backend running at ${app.server?.hostname}:${app.server?.port}`)
+}
+
+export default app
+
