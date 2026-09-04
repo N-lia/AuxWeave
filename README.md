@@ -3,11 +3,14 @@
 > **Agent-Native Collaborative Design Canvas powered by the W3C WebMCP Standard**
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-auxweave.vercel.app-22c55e.svg)](https://auxweave.vercel.app/)
 [![W3C WebMCP](https://img.shields.io/badge/Standard-W3C_WebMCP-6366f1.svg)](https://github.com/N-lia/AuxWeave)
 [![Built with TypeScript](https://img.shields.io/badge/Built_with-TypeScript-3178c6.svg)](https://www.typescriptlang.org/)
 [![React + Vite](https://img.shields.io/badge/Frontend-React_%2B_Vite-61dafb.svg)](https://vitejs.dev/)
 
 Auxweave is a browser-first vector design studio where **humans and AI agents co-create on the exact same live canvas in real-time**. Built on the emerging **W3C WebMCP (Web Model Context Protocol)** specification, Auxweave bridges the gap between direct spatial manipulation and autonomous AI design assistance.
+
+🌐 **Live Application**: [https://auxweave.vercel.app/](https://auxweave.vercel.app/)
 
 ---
 
@@ -141,7 +144,7 @@ npm install
 ```bash
 npm run dev
 ```
-Open **`http://localhost:3300`** in your browser. Click **New Canvas** or open an existing design from `/files`.
+Open **`https://auxweave.vercel.app/`** (or your local dev server at `http://localhost:3300`). Click **New Canvas** or open an existing design from `/files`.
 
 ### 3. Build for Production
 ```bash
@@ -154,7 +157,7 @@ npm run build
 
 ### Method 1: Chrome DevTools WebMCP Panel (Official)
 1. Open Google Chrome with the [WebMCP Extension](https://github.com/GoogleChromeLabs/web-model-context-protocol) or run with `chrome://flags/#enable-webmcp-testing`.
-2. Open Auxweave (`http://localhost:3300/create`).
+2. Open Auxweave live at [**`https://auxweave.vercel.app/create`**](https://auxweave.vercel.app/create) (or your local environment).
 3. Press `F12` and navigate to the **WebMCP** panel in DevTools.
 4. All 17 Auxweave tools will be listed live under `document.modelContext`.
 5. Execute any tool (e.g. `create_flex_container`) and watch the canvas update in real-time.
