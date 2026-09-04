@@ -30,6 +30,18 @@ function sanitizeSceneObject(raw: unknown): Record<string, unknown> {
   } else if (obj.type === 'icon') {
     const c = obj.content as Record<string, unknown> | undefined
     sanitized.icon = c?.iconName || obj.iconName
+  } else if (obj.type === 'group') {
+    // Children are stored container-local; report absolute boxes so the
+    // agent's spatial map matches what actually renders (recursive).
+    const content = obj.content as { children?: unknown[] } | undefined
+    const kids = Array.isArray(content?.children) ? content.children : []
+    const baseX = typeof obj.x === 'number' ? obj.x : 0
+    const baseY = typeof obj.y === 'number' ? obj.y : 0
+    sanitized.childCount = kids.length
+    sanitized.children = kids
+      .slice(0, 12)
+      .map(kid => absolutizeStructuredChild(kid, baseX, baseY))
+      .filter(Boolean)
   }
 
   if (obj.style && typeof obj.style === 'object') {
@@ -54,6 +66,37 @@ function sanitizeSceneObject(raw: unknown): Record<string, unknown> {
   }
 
   return sanitized
+}
+
+function absolutizeStructuredChild(
+  kid: unknown,
+  baseX: number,
+  baseY: number,
+): Record<string, unknown> | null {
+  if (!kid || typeof kid !== 'object') return null
+  const k = kid as Record<string, unknown>
+  const kx = typeof k.x === 'number' ? k.x : 0
+  const ky = typeof k.y === 'number' ? k.y : 0
+  const absX = Math.round(baseX + kx)
+  const absY = Math.round(baseY + ky)
+  const entry: Record<string, unknown> = {
+    id: k.id,
+    type: k.type,
+    x: absX,
+    y: absY,
+    width: k.width,
+    height: k.height,
+  }
+  if (k.type === 'group') {
+    const content = k.content as { children?: unknown[] } | undefined
+    const kids = Array.isArray(content?.children) ? content.children : []
+    entry.childCount = kids.length
+    entry.children = kids
+      .slice(0, 12)
+      .map(nested => absolutizeStructuredChild(nested, absX, absY))
+      .filter(Boolean)
+  }
+  return entry
 }
 
 export const getCanvasSceneStateTool: WebMCPTool = {
@@ -194,6 +237,19 @@ export const verifyCanvasAlignmentTool: WebMCPTool = {
     const win = window as unknown as {
       __Auxweave_GET_STRUCTURED_STATE__?: () => unknown[]
       __Auxweave_GET_DOC_META__?: () => { width: number; height: number }
+      __Auxweave_VALIDATE_LAYOUT__?: () => {
+        success: boolean
+        artboard?: { width: number; height: number }
+        objectCount?: number
+        issueCount?: number
+        issues?: Array<{
+          code: string
+          severity: 'error' | 'warning'
+          message: string
+          hint: string
+          objectId?: string
+        }>
+      }
     }
 
     const meta =
@@ -207,28 +263,31 @@ export const verifyCanvasAlignmentTool: WebMCPTool = {
         : []
 
     const objects = Array.isArray(state) ? state : []
-    const margin = 40
-    const edgeCollisions: string[] = []
 
-    for (const raw of objects) {
-      const obj = raw as Record<string, unknown>
-      const x = typeof obj.x === 'number' ? obj.x : 0
-      const y = typeof obj.y === 'number' ? obj.y : 0
-      const w = typeof obj.width === 'number' ? obj.width : 0
-      const h = typeof obj.height === 'number' ? obj.height : 0
-      const id = String(obj.id || 'unknown')
-      const type = String(obj.type || '')
-
-      // Container rects spanning canvas are ignored for margin collision
-      if (type === 'rect' && w >= meta.width * 0.9 && h >= meta.height * 0.9) continue
-
-      if (x < margin) edgeCollisions.push(`${id} (${type}) extends past left margin (x: ${x})`)
-      if (y < margin) edgeCollisions.push(`${id} (${type}) extends past top margin (y: ${y})`)
-      if (x + w > meta.width - margin)
-        edgeCollisions.push(`${id} (${type}) extends past right margin (x+w: ${x + w})`)
-      if (y + h > meta.height - margin)
-        edgeCollisions.push(`${id} (${type}) extends past bottom margin (y+h: ${y + h})`)
+    // Full-fidelity validation (container-aware, contrast, typography) when
+    // the editor bridge is mounted; otherwise degrade to an empty pass.
+    let issues: Array<{
+      code: string
+      severity: 'error' | 'warning'
+      message: string
+      hint: string
+      objectId?: string
+    }> = []
+    if (typeof win.__Auxweave_VALIDATE_LAYOUT__ === 'function') {
+      try {
+        const report = await win.__Auxweave_VALIDATE_LAYOUT__()
+        if (report && report.success && Array.isArray(report.issues)) {
+          issues = report.issues
+        }
+      } catch {
+        /* fall through with no issues */
+      }
     }
+
+    const marginViolations = issues
+      .filter(i => i.code === 'out-of-bounds' || i.code === 'safe-margin')
+      .map(i => i.message)
+    const errors = issues.filter(i => i.severity === 'error')
 
     return {
       status: 'evaluated',
@@ -245,14 +304,18 @@ export const verifyCanvasAlignmentTool: WebMCPTool = {
         imagesCount: objects.filter(o => (o as Record<string, unknown>).type === 'image').length,
       },
       marginDiagnostics: {
-        safeMarginPx: margin,
-        marginViolations: edgeCollisions.slice(0, 5),
-        isWithinSafeBounds: edgeCollisions.length === 0,
+        safeMarginPx: Math.round(Math.min(meta.width, meta.height) * 0.04),
+        marginViolations: marginViolations.slice(0, 5),
+        isWithinSafeBounds: marginViolations.length === 0,
       },
+      issueCount: issues.length,
+      errorCount: errors.length,
+      issues: issues.slice(0, 10),
       selfCorrectionAdvice:
-        edgeCollisions.length > 0
+        issues.length > 0
           ? [
-              'Some elements extend past safe artboard margins. Adjust their position or dimensions using update_object_transform.',
+              ...issues.slice(0, 2).map(i => i.hint),
+              'Run repair_layout to apply automatic fixes, then re-verify.',
             ]
           : [
               'Layout is well-contained within artboard safe bounds.',

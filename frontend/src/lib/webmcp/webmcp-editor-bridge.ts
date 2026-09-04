@@ -31,7 +31,6 @@ import { loadImageMetadata } from '../auxweave-image-proxy'
 import {
   type AuxweaveDocument,
   activateAuxweavePage,
-  createEmptyAuxweaveDocument,
   createEmptyAuxweavePage,
   exportSceneStructuredState,
   getSelectionBounds,
@@ -1300,6 +1299,13 @@ export function mountWebMCPEditorBridge(opts: EditorBridgeOptions): () => void {
       y: Math.round(solved.y),
       width: Math.round(solved.width),
       height: Math.round(solved.height),
+      // Absolute boxes so the agent's spatial map includes every child.
+      children: solved.children.map(c => ({
+        x: Math.round(solved.x + c.x),
+        y: Math.round(solved.y + c.y),
+        width: Math.round(c.width),
+        height: Math.round(c.height),
+      })),
     }
   }
 
@@ -1391,7 +1397,21 @@ export function mountWebMCPEditorBridge(opts: EditorBridgeOptions): () => void {
     }))
     setSelectedIds([groupObj.id])
 
-    return { success: true, groupId: groupObj.id, count: targets.length }
+    return {
+      success: true,
+      groupId: groupObj.id,
+      count: targets.length,
+      x: Math.round(minX),
+      y: Math.round(minY),
+      width: Math.round(totalW),
+      height: Math.round(totalH),
+      children: [...bgChildren, ...reflowedChildren].map(c => ({
+        x: Math.round(minX + c.x),
+        y: Math.round(minY + c.y),
+        width: Math.round(c.width),
+        height: Math.round(c.height),
+      })),
+    }
   }
 
   // ── Teardown ─────────────────────────────────────────────────────────────
@@ -1425,38 +1445,7 @@ export function mountWebMCPEditorBridge(opts: EditorBridgeOptions): () => void {
     for (const key of KEYS) {
       delete win[key]
     }
-    // Re-install fallback bridge so WebMCP tools remain callable even when editor unmounts
-    installFallbackEditorBridge()
   }
-}
-
-// ---------------------------------------------------------------------------
-// Headless fallback canvas store
-// Keeps all 17 canvas tools fully operable on non-editor routes (e.g. landing /)
-// ---------------------------------------------------------------------------
-let _fallbackDoc: AuxweaveDocument = createEmptyAuxweaveDocument(1080, 1080)
-let _fallbackSelectedIds: string[] = []
-
-export function installFallbackEditorBridge(): void {
-  if (typeof window === 'undefined') return
-  const win = window as unknown as Record<string, unknown>
-  if (typeof win.__Auxweave_GET_STRUCTURED_STATE__ === 'function') return
-
-  mountWebMCPEditorBridge({
-    store: {
-      getState: () => ({
-        doc: _fallbackDoc,
-        selectedIds: _fallbackSelectedIds,
-        setDoc: updater => {
-          _fallbackDoc = updater(_fallbackDoc)
-        },
-        setSelectedIds: ids => {
-          _fallbackSelectedIds = ids
-        },
-      }),
-    },
-    getVectorBoardDocs: () => ({}),
-  })
 }
 
 // Singleton guard — survives Strict Mode double-invoke but prevents re-registration

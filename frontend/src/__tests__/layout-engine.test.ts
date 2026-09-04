@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import type { SceneObject } from '../lib/auxweave-scene'
+import type { SceneGroup, SceneObject } from '../lib/auxweave-scene'
 import {
   alignLayout,
   clampToArtboardBounds,
   contrastRatio,
   distributeLayout,
   dockLayout,
+  findSpatialObjectById,
+  flattenSpatialObjects,
   GRID_UNIT,
   gridLayout,
   intersectionArea,
+  isContainerOrBackdrop,
   normalizeBox,
   overlapRatio,
   parseCssColor,
@@ -334,5 +337,99 @@ describe('repairLayout', () => {
     const result = repairLayout(objects, 1080, 1350)
     expect(result.objects).toHaveLength(objects.length)
     expect(result.objects.map(o => o.id).sort()).toEqual(objects.map(o => o.id).sort())
+  })
+})
+
+function makeGroup(x: number, y: number, width: number, height: number, children: SceneObject[]): SceneGroup {
+  return {
+    id: nextId(),
+    type: 'group',
+    x,
+    y,
+    width,
+    height,
+    rotation: 0,
+    opacity: 1,
+    visible: true,
+    locked: false,
+    blurPct: 0,
+    shadow: null,
+    children,
+  }
+}
+
+describe('container-aware spatial layer', () => {
+  it('treats covering groups as containers and small groups as foreground', () => {
+    const covering = makeGroup(0, 0, 1080, 1350, [])
+    const small = makeGroup(100, 100, 200, 150, [])
+    expect(isContainerOrBackdrop(covering, 1080, 1350)).toBe(true)
+    expect(isContainerOrBackdrop(small, 1080, 1350)).toBe(false)
+    expect(
+      isContainerOrBackdrop(small, 1080, 1350, { x: 120, y: 110, width: 40, height: 30 }),
+    ).toBe(true)
+  })
+
+  it('flattens container groups to absolute child coords', () => {
+    const child = makeText(10, 20, 300, 50, 32, '#FFFFFF')
+    const group = makeGroup(500, 400, 1080, 1350, [child])
+    const flat = flattenSpatialObjects([group], 1080, 1350)
+    expect(flat).toHaveLength(1)
+    expect(flat[0]).toMatchObject({ id: child.id, x: 510, y: 420 })
+  })
+
+  it('keeps small groups atomic when flattening', () => {
+    const child = makeText(10, 20, 300, 50, 32, '#FFFFFF')
+    const group = makeGroup(100, 100, 320, 200, [child])
+    const flat = flattenSpatialObjects([group], 1080, 1350)
+    expect(flat).toHaveLength(1)
+    expect(flat[0]).toMatchObject({ id: group.id, x: 100, y: 100 })
+  })
+
+  it('finds nested objects by id', () => {
+    const child = makeText(10, 20, 300, 50, 32, '#FFFFFF')
+    const group = makeGroup(0, 0, 1080, 1350, [child])
+    expect(findSpatialObjectById([group], child.id)?.id).toBe(child.id)
+    expect(findSpatialObjectById([group], 'missing')).toBeNull()
+  })
+
+  it('does not flag container-contained composition as overlap', () => {
+    const card = makeRect(100, 100, 500, 400)
+    const label = makeText(150, 150, 200, 50, 32, '#FFFFFF')
+    const issues = validateLayout([card, label], 1080, 1350, { artboardBg: '#0B0F19' })
+    expect(issues.filter(i => i.code === 'foreground-overlap')).toEqual([])
+  })
+
+  it('validates flex children at absolute positions without false margins', () => {
+    const child = makeText(10, 20, 300, 50, 32, '#FFFFFF')
+    const group = makeGroup(500, 400, 1080, 1350, [child])
+    const issues = validateLayout([group], 1080, 1350, { artboardBg: '#0B0F19' })
+    // Child renders at (510,420) — no margin violation; group is a container.
+    expect(issues).toEqual([])
+  })
+
+  it('repair never moves covering groups but moves colliding outsiders', () => {
+    const child = makeRect(100, 100, 300, 200)
+    const group = makeGroup(0, 0, 1080, 1350, [child])
+    const outsider = makeRect(150, 150, 200, 100)
+    const result = repairLayout([group, outsider], 1080, 1350)
+    const fixedGroup = result.objects.find(o => o.id === group.id)!
+    expect(fixedGroup.x).toBe(0)
+    expect(fixedGroup.y).toBe(0)
+    const fixedOutsider = result.objects.find(o => o.id === outsider.id)!
+    // Outsider overlapped the flex child at absolute (100,100)-(400,300).
+    expect(fixedOutsider.y).toBeGreaterThan(outsider.y)
+    // Nested flex children untouched (same references, no drift).
+    const fixedChild = (fixedGroup as SceneGroup).children[0]!
+    expect(fixedChild.x).toBe(100)
+    expect(fixedChild.y).toBe(100)
+  })
+
+  it('repair bumps nested tiny text to the readability floor', () => {
+    const tiny = makeText(120, 120, 200, 30, 8, '#FFFFFF')
+    const group = makeGroup(0, 0, 1080, 1350, [tiny])
+    const result = repairLayout([group], 1080, 1350, { artboardBg: '#0B0F19' })
+    const fixedChild = (result.objects.find(o => o.id === group.id) as SceneGroup).children[0]!
+    expect(fixedChild.type).toBe('text')
+    if (fixedChild.type === 'text') expect(fixedChild.fontSize).toBeGreaterThanOrEqual(12)
   })
 })

@@ -529,7 +529,7 @@ export default function EditorMoodboardsPanel({
                 </div>
                 <p className="text-[11px] text-neutral-600 leading-relaxed">
                   Display this moodboard on its own dedicated artboard with auto-arranged
-                  proportions and visual hierarchy.
+                  proportions and AI palette swatches.
                 </p>
                 <button
                   type="button"

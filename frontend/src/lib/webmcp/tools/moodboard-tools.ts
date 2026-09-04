@@ -19,7 +19,7 @@ export const getMoodboardContentTool: WebMCPTool = {
   name: 'get_moodboard_content',
   title: 'Get Moodboard Images & Visual References',
   description:
-    "Retrieves the active moodboard references, including inspiration images (URLs, titles, source, dimensions), tags, and descriptions. The agent should use this tool to inspect reference imagery and aesthetic direction from the user's moodboard.",
+    "Retrieves the active moodboard references, including all inspiration images (URLs, titles, source, dimensions, extracted color palettes), tags, descriptions, and dominant color palette. The agent should use this tool to inspect reference imagery, color schemes, and aesthetic direction from the user's moodboard.",
   inputSchema: {
     type: 'object',
     properties: {

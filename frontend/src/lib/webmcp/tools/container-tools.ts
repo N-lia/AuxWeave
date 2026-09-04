@@ -197,10 +197,26 @@ export const wrapInFlexContainerTool: WebMCPTool = {
     if (options.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
     const win = window as unknown as {
-      __Auxweave_WRAP_IN_FLEX__?: (args: typeof input) => Promise<{
+      __Auxweave_CREATE_FLEX_CONTAINER__?: (args: FlexContainerInput) => Promise<{
+        success: boolean
+        containerId?: string
+        childCount?: number
+        x?: number
+        y?: number
+        width?: number
+        height?: number
+        children?: Array<{ x: number; y: number; width: number; height: number }>
+        error?: string
+      }>
+      __Auxweave_WRAP_IN_FLEX__?: (args: unknown) => Promise<{
         success: boolean
         groupId?: string
         count?: number
+        x?: number
+        y?: number
+        width?: number
+        height?: number
+        children?: Array<{ x: number; y: number; width: number; height: number }>
         error?: string
       }>
     }

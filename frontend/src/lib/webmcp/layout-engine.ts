@@ -73,13 +73,35 @@ export function isContainedWithin(candidate: Box, container: Box): boolean {
 /**
  * Identifies if a scene object is a full-artboard backdrop or container card.
  * Foreground elements are intended to sit ON TOP of containers rather than be pushed below them.
+ *
+ * Both large rectangles AND covering groups (e.g. flex-container groups that
+ * span the artboard) count as containers. A fill-sized group treated as
+ * foreground would swallow every later placement, collapsing the layout.
+ *
+ * Accepts any structural { type, width, height } so flattened validation
+ * entries (which are not full SceneObjects) can be tested too.
  */
 export function isContainerOrBackdrop(
-  obj: SceneObject,
+  obj: { type: string; x: number; y: number; width: number; height: number },
   artboardW: number,
   artboardH: number,
   candidate?: Box,
 ): boolean {
+  const covers = obj.width >= artboardW * 0.65 && obj.height >= artboardH * 0.65
+  // Groups are layout-owned: a covering group is always a container, and a
+  // small group is always an atomic foreground unit (never expanded here).
+  if (obj.type === 'group') {
+    if (covers) return true
+    if (
+      candidate &&
+      isContainedWithin(candidate, obj) &&
+      (obj.width > candidate.width * 1.3 || obj.height > candidate.height * 1.3)
+    ) {
+      return true
+    }
+    return false
+  }
+
   // Only geometric rectangles, cards, or frames can act as containers/backdrops.
   // Text, icons, images, and lines are always foreground elements.
   if (obj.type !== 'rect') {
@@ -87,7 +109,7 @@ export function isContainerOrBackdrop(
   }
 
   // Covers >65% of artboard in both dimensions
-  if (obj.width >= artboardW * 0.65 && obj.height >= artboardH * 0.65) {
+  if (covers) {
     return true
   }
   // Candidate is completely placed inside this object
@@ -99,6 +121,49 @@ export function isContainerOrBackdrop(
     return true
   }
   return false
+}
+
+/**
+ * Flatten a scene into absolute-coordinate entries for collision,
+ * validation, and anchoring.
+ *
+ * Container-sized groups are EXPANDED (children reported at absolute
+ * positions = group origin + local offset) and dropped as obstacles;
+ * small groups stay atomic. Nested groups accumulate offsets recursively.
+ * Flat scenes pass through unchanged (identity for existing callers).
+ */
+export function flattenSpatialObjects(
+  objects: SceneObject[],
+  artboardW: number,
+  artboardH: number,
+  originX = 0,
+  originY = 0,
+): ValidatableObject[] {
+  const out: ValidatableObject[] = []
+  for (const obj of objects) {
+    if (obj.type === 'group' && isContainerOrBackdrop(obj, artboardW, artboardH)) {
+      flattenSpatialObjects(obj.children, artboardW, artboardH, originX + obj.x, originY + obj.y)
+        .forEach(entry => out.push(entry))
+      continue
+    }
+    const entry = toValidatable(obj)
+    entry.x += originX
+    entry.y += originY
+    out.push(entry)
+  }
+  return out
+}
+
+/** Find any object by id, recursing into groups (offsets ignored). */
+export function findSpatialObjectById(objects: SceneObject[], id: string): SceneObject | null {
+  for (const obj of objects) {
+    if (obj.id === id) return obj
+    if (obj.type === 'group') {
+      const nested = findSpatialObjectById(obj.children, id)
+      if (nested) return nested
+    }
+  }
+  return null
 }
 
 /**
@@ -118,8 +183,10 @@ export function resolveCollisionFreeY(
   let attempts = 0
   const maxAttempts = 20
 
-  // Filter out background cards/containers
-  const foregroundObjects = existingObjects.filter(
+  // Filter out background cards/containers. Flattened to absolute coords so
+  // children of container groups (e.g. flex layouts) are real obstacles while
+  // the container itself never swallows placements.
+  const foregroundObjects = flattenSpatialObjects(existingObjects, artboardW, artboardH).filter(
     obj => !isContainerOrBackdrop(obj, artboardW, artboardH, candidate),
   )
 
@@ -164,23 +231,36 @@ export function resolveAnchorPlacement(
 ): { x: number; y: number } | null {
   if (existingObjects.length === 0) return null
 
-  let target: SceneObject | undefined
+  // Absolute-coordinate view: container groups expand to their children so
+  // anchoring sees real foreground (flex children included).
+  const flat = flattenSpatialObjects(existingObjects, artboardW, artboardH)
+
+  let targetBox: Box | undefined
 
   if (relativeTo === 'previous') {
     // Find the last foreground object
-    for (let i = existingObjects.length - 1; i >= 0; i--) {
-      const candidateObj = existingObjects[i]!
+    for (let i = flat.length - 1; i >= 0; i--) {
+      const candidateObj = flat[i]!
       if (!isContainerOrBackdrop(candidateObj, artboardW, artboardH)) {
-        target = candidateObj
+        targetBox = candidateObj
         break
       }
     }
     // Fallback to absolute last object if all are containers
-    if (!target) target = existingObjects[existingObjects.length - 1]
+    if (!targetBox) {
+      const last = flat[flat.length - 1]
+      if (last) targetBox = last
+    }
   } else {
-    target = existingObjects.find(o => o.id === relativeTo)
+    const direct = existingObjects.find(o => o.id === relativeTo)
+    if (direct) {
+      targetBox = { x: direct.x, y: direct.y, width: direct.width, height: direct.height }
+    } else {
+      targetBox = flat.find(o => o.id === relativeTo)
+    }
   }
 
+  const target = targetBox
   if (!target) return null
 
   const gap = opts?.gap ?? Math.round(Math.max(20, Math.min(artboardW, artboardH) * 0.02))
@@ -826,7 +906,9 @@ export function validateLayout(
   const minContrast = opts.minContrast ?? 4.5
   const maxFontSizes = opts.maxFontSizes ?? 6
   const margin = Math.round(Math.min(artboardW, artboardH) * marginRatio)
-  const items = objects.map(toValidatable).filter(o => o.visible !== false)
+  // Absolute-coordinate view: container groups expand so flex children are
+  // linted where they actually render (and containers never collide).
+  const items = flattenSpatialObjects(objects, artboardW, artboardH).filter(o => o.visible !== false)
 
   const isBackdrop = (o: ValidatableObject) =>
     o.type === 'rect' && o.width >= artboardW * 0.9 && o.height >= artboardH * 0.9
@@ -865,12 +947,19 @@ export function validateLayout(
     }
   }
 
-  // 2. Foreground overlaps (pairwise, document order)
+  // 2. Foreground overlaps (pairwise, document order). An element fully
+  // contained in a much larger card/container is composition, not collision.
   const foreground = items.filter(o => !isBackdrop(o))
   for (let i = 0; i < foreground.length; i++) {
     for (let j = i + 1; j < foreground.length; j++) {
       const a = foreground[i]!
       const b = foreground[j]!
+      if (
+        isContainerOrBackdrop(a, artboardW, artboardH, b) ||
+        isContainerOrBackdrop(b, artboardW, artboardH, a)
+      ) {
+        continue
+      }
       const ratio = overlapRatio(a, b)
       if (ratio > overlapThreshold) {
         issues.push({
@@ -926,7 +1015,7 @@ export function validateLayout(
       // Effective backdrop = topmost covering rect's solid fill, else artboard bg.
       let effectiveBg = bgColor
       for (const b of covering) {
-        const sceneObj = objects.find(s => s.id === b.id)
+        const sceneObj = findSpatialObjectById(objects, b.id)
         const fill = solidFillColor((sceneObj as { fill?: unknown } | undefined)?.fill)
         if (fill && parseCssColor(fill)) effectiveBg = fill
       }
@@ -1016,6 +1105,10 @@ export function repairLayout(
 
   const isBackdrop = (o: SceneObject) =>
     o.type === 'rect' && o.width >= artboardW * 0.9 && o.height >= artboardH * 0.9
+  // Covering groups (flex containers) are layout-owned: never moved for
+  // collisions or margins, only clamped as units.
+  const isContainer = (o: SceneObject) =>
+    isBackdrop(o) || isContainerOrBackdrop(o, artboardW, artboardH)
 
   // Pass 1 — clamp everything into bounds.
   for (const o of working) {
@@ -1025,14 +1118,22 @@ export function repairLayout(
   }
   working = working.map(o => byId.get(o.id)!)
 
-  // Pass 2 — de-collide foreground in document order (later items move down).
-  // Only foreground participates: backdrops are containers by definition and
-  // must never push content off the canvas.
+  // Pass 2 — de-collide top-level foreground in document order (later items
+  // move down). Children of container groups act as FIXED obstacles at
+  // absolute coords; only top-level objects move, so solver-placed flex
+  // children are never torn apart by repair.
   const placed: Box[] = []
+  for (const o of working) {
+    if (o.type === 'group' && isContainerOrBackdrop(o, artboardW, artboardH)) {
+      for (const entry of flattenSpatialObjects([o], artboardW, artboardH)) {
+        if (!isContainerOrBackdrop(entry, artboardW, artboardH)) placed.push(entry)
+      }
+    }
+  }
   for (const o of working) {
     const current = byId.get(o.id)!
     const box: Box = { x: current.x, y: current.y, width: current.width, height: current.height }
-    if (!isBackdrop(current)) {
+    if (!isContainer(current)) {
       let candidate = { ...box }
       for (let attempt = 0; attempt < 20; attempt++) {
         const hit = placed.find(p => overlapRatio(candidate, p) > overlapThreshold)
@@ -1051,10 +1152,10 @@ export function repairLayout(
   }
   working = working.map(o => byId.get(o.id)!)
 
-  // Pass 3 — nudge foreground boxes into the safe frame.
+  // Pass 3 — nudge top-level foreground boxes into the safe frame.
   const frame = safeFrame(artboardW, artboardH, marginRatio)
   for (const o of working) {
-    if (isBackdrop(byId.get(o.id)!)) continue
+    if (isContainer(byId.get(o.id)!)) continue
     const current = byId.get(o.id)!
     const box: Box = { x: current.x, y: current.y, width: current.width, height: current.height }
     const nudged = { ...box }
@@ -1070,22 +1171,39 @@ export function repairLayout(
   }
   working = working.map(o => byId.get(o.id)!)
 
-  // Pass 4 — readability floor for tiny text.
+  // Pass 4 — readability floor for tiny text (top-level and nested).
   if (fixTinyText) {
-    for (const o of working) {
-      const current = byId.get(o.id)!
-      if (current.type !== 'text' || current.fontSize >= minReadable) continue
-      const beforeSize = current.fontSize
-      byId.set(o.id, { ...current, fontSize: minReadable })
-      fixes.push({
-        objectId: o.id,
-        kind: 'restyle',
-        reason: `raise to ${minReadable}px readability floor`,
-        before: { fontSize: Math.round(beforeSize) },
-        after: { fontSize: minReadable },
+    const bump = (objects: SceneObject[]): { next: SceneObject[]; changed: boolean } => {
+      let changed = false
+      const next = objects.map(obj => {
+        if (obj.type === 'text' && obj.fontSize < minReadable) {
+          fixes.push({
+            objectId: obj.id,
+            kind: 'restyle',
+            reason: `raise to ${minReadable}px readability floor`,
+            before: { fontSize: Math.round(obj.fontSize) },
+            after: { fontSize: minReadable },
+          })
+          changed = true
+          return { ...obj, fontSize: minReadable }
+        }
+        if (obj.type === 'group') {
+          const inner = bump(obj.children)
+          if (inner.changed) {
+            changed = true
+            return { ...obj, children: inner.next }
+          }
+        }
+        return obj
       })
+      return { next: changed ? next : objects, changed }
     }
-    working = working.map(o => byId.get(o.id)!)
+    const bumped = bump(working)
+    if (bumped.changed) {
+      working = bumped.next
+      byId.clear()
+      for (const o of working) byId.set(o.id, o)
+    }
   }
 
   const remaining = validateLayout(working, artboardW, artboardH, opts)
