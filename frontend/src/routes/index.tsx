@@ -149,29 +149,6 @@ const essentialTools: EssentialTool[] = [
   },
 ];
 
-// const magicPromptExamples = [
-//   "Turn this into a bold festival flyer with tighter spacing.",
-//   "Rewrite the headline and make the layout feel more editorial.",
-//   "Give this poster a softer color story and cleaner rhythm.",
-// ];
-
-// const magicCapabilities = [
-//   {
-//     label: "First pass",
-//     title: "Start from a rough idea.",
-//     note: "Drop in a prompt and get a sharper direction before you start nudging the details.",
-//   },
-//   {
-//     label: "Rewrite",
-//     title: "Fix the words and the structure.",
-//     note: "Ask for punchier copy, better hierarchy, or a cleaner arrangement without leaving the canvas.",
-//   },
-//   {
-//     label: "Refine",
-//     title: "Keep iterating in place.",
-//     note: "Use Magic to push a layout further instead of starting over every time the vibe is slightly off.",
-//   },
-// ];
 
 type DragState = {
   mode: "drag" | "rotate";
@@ -372,8 +349,8 @@ function Landing() {
   const hasSavedFiles = (savedFileCount ?? 0) > 0;
   const primaryCtaLabel = hasSavedFiles ? "Open files" : "Open editor";
   const heroBody = hasSavedFiles
-    ? "You already have saved work in this browser. Open your files and keep editing."
-    : "Auxweave is an open canvas for layouts, posters, and graphics.";
+    ? "You already have saved work in this browser. Open your files and keep designing alongside your AI agent."
+    : "A web-native creative canvas where AI agents can design alongside humans through WebMCP. Direct spatial manipulation meets autonomous multi-turn design on a live shared artboard.";
   const activeTool = essentialTools[activeToolIndex];
   const activeToolCount = String(activeToolIndex + 1).padStart(2, "0");
   const totalToolCount = String(essentialTools.length).padStart(2, "0");
@@ -536,10 +513,14 @@ function Landing() {
         </div>
         <div className="relative z-[1] mx-auto w-full max-w-3xl">
           <div className="rise-in text-left">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/[0.1] bg-white/80 px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[var(--text)] shadow-xs backdrop-blur-sm sm:text-sm">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              W3C WebMCP Standard Canvas
+            </div>
             <h1 className="display-title hero-headline mb-8 font-medium text-balance text-[var(--text)] sm:mb-10 lg:mb-12">
-              Design in the browser,
+              A web-native creative canvas,
               <br />
-              openly.
+              where AI agents design with humans.
             </h1>
             <p className="mb-10 max-w-xl text-lg leading-[1.6] text-[var(--text-muted)] sm:mb-12 sm:text-xl sm:leading-[1.55] lg:text-[1.375rem] lg:leading-[1.5]">
               {heroBody}
@@ -559,7 +540,7 @@ function Landing() {
                 Auxweave Studio
               </Link>
               <a
-                href="https://github.com/akinloluwami/Auxweave"
+                href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/[0.14] bg-white/70 px-8 py-3.5 text-base font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:border-black/[0.22] hover:bg-white sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
@@ -713,46 +694,71 @@ function Landing() {
         </div>
       </section>
 
-      {/*
       <section className="landing-section">
         <div className="landing-container">
-          <div className="landing-magic-shell">
-            <div className="landing-ai-header">
-              <h2 className="display-title landing-section-title">Magic</h2>
-              <p className="landing-section-copy">
-                Prompt a first pass, rewrite the weak parts, or steer the
-                layout toward a better mood without breaking your flow.
+          <div className="relative overflow-hidden rounded-[2.4rem] border border-black/[0.08] bg-white/75 p-6 shadow-xl backdrop-blur-md sm:p-10 lg:p-14">
+            <div className="max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-black/[0.1] bg-white px-3.5 py-1 text-xs font-semibold tracking-wider uppercase text-[var(--text-subtle)]">
+                <span className="inline-block h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                Web Model Context Protocol
+              </div>
+              <h2 className="display-title mb-4 text-3xl font-medium tracking-tight text-[var(--text)] sm:text-4xl lg:text-5xl">
+                AI agents designing on your live canvas.
+              </h2>
+              <p className="text-base leading-relaxed text-[var(--text-muted)] sm:text-lg">
+                Instead of static bitmaps or coordinate hallucinations, Auxweave exposes 17 live vector tools to agents via <code className="rounded bg-black/[0.06] px-1.5 py-0.5 font-mono text-sm text-[var(--text)]">document.modelContext</code>. Humans direct, drag, and fine-tune while AI models construct structured auto-layouts, type hierarchies, and color harmonies in real time.
               </p>
             </div>
 
-            <div className="landing-magic-grid">
-              <div className="landing-magic-prompt-card">
-                <span className="landing-magic-prompt-label">
-                  Try prompts like
-                </span>
-                <div className="landing-ai-prompt-list">
-                  {magicPromptExamples.map((prompt) => (
-                    <span key={prompt}>{prompt}</span>
-                  ))}
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-2xl border border-black/[0.06] bg-white/90 p-6 shadow-xs transition hover:shadow-md">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-mono text-sm font-bold">
+                  &lt;/&gt;
                 </div>
+                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">Web-Native Layout Primitives</h3>
+                <p className="text-sm leading-relaxed text-[var(--text-muted)]">
+                  Flex containers, directional flow, alignment, and auto-gap solving. Agents reason with structural layout primitives instead of guessing absolute pixel coordinates.
+                </p>
               </div>
 
-              <div className="landing-magic-card-list">
-                {magicCapabilities.map((item) => (
-                  <article key={item.title} className="landing-magic-card">
-                    <span className="landing-magic-prompt-label">
-                      {item.label}
-                    </span>
-                    <h3>{item.title}</h3>
-                    <p>{item.note}</p>
-                  </article>
-                ))}
+              <div className="rounded-2xl border border-black/[0.06] bg-white/90 p-6 shadow-xs transition hover:shadow-md">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-mono text-sm font-bold">
+                  MCP
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">W3C WebMCP Standard</h3>
+                <p className="text-sm leading-relaxed text-[var(--text-muted)]">
+                  Built on the official WebMCP browser specification. Direct integration via the Chrome DevTools WebMCP panel or the embedded multi-model AI designer panel.
+                </p>
               </div>
+
+              <div className="rounded-2xl border border-black/[0.06] bg-white/90 p-6 shadow-xs transition hover:shadow-md sm:col-span-2 lg:col-span-1">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 font-mono text-sm font-bold">
+                  ⚡
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">Real-Time Co-Design</h3>
+                <p className="text-sm leading-relaxed text-[var(--text-muted)]">
+                  Zero export friction. Every element created by an agent is an editable vector object that humans can select, recolor, and transform instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-black/[0.08] bg-neutral-900 p-5 text-neutral-200 shadow-inner sm:p-6">
+              <div className="mb-3 flex items-center justify-between text-xs text-neutral-400">
+                <span className="font-mono uppercase tracking-widest text-emerald-400">Live Agent Tool Call</span>
+                <span className="font-mono">document.modelContext</span>
+              </div>
+              <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-neutral-300 sm:text-sm">
+                <code>{`document.modelContext.registerTool({
+  name: "create_flex_container",
+  description: "Create a flexbox auto-layout container on the artboard",
+  parameters: { direction: "vertical", gap: 24, justify: "center" },
+  execute: async (args) => { /* manipulates live vector canvas in real-time */ }
+});`}</code>
+              </pre>
             </div>
           </div>
         </div>
       </section>
-      */}
 
       <section className="landing-section landing-section-last">
         <div className="landing-container">
@@ -772,7 +778,7 @@ function Landing() {
                 Open editor
               </button>
               <a
-                href="https://github.com/akinloluwami/Auxweave"
+                href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/[0.14] bg-white/72 px-8 py-3.5 text-base font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:border-black/[0.22] hover:bg-white sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
