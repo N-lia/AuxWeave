@@ -31,6 +31,7 @@ import { loadImageMetadata } from '../auxweave-image-proxy'
 import {
   type AuxweaveDocument,
   activateAuxweavePage,
+  createEmptyAuxweaveDocument,
   createEmptyAuxweavePage,
   exportSceneStructuredState,
   getSelectionBounds,
@@ -136,7 +137,7 @@ function placeResult(obj: SceneObject): BridgePlacement {
 // ---------------------------------------------------------------------------
 // Mount / teardown
 // ---------------------------------------------------------------------------
-type AnyFn = (...args: unknown[]) => unknown
+type AnyFn = (...args: any[]) => any
 
 export function mountWebMCPEditorBridge(opts: EditorBridgeOptions): () => void {
   if (typeof window === 'undefined') return () => {}
@@ -1424,7 +1425,38 @@ export function mountWebMCPEditorBridge(opts: EditorBridgeOptions): () => void {
     for (const key of KEYS) {
       delete win[key]
     }
+    // Re-install fallback bridge so WebMCP tools remain callable even when editor unmounts
+    installFallbackEditorBridge()
   }
+}
+
+// ---------------------------------------------------------------------------
+// Headless fallback canvas store
+// Keeps all 17 canvas tools fully operable on non-editor routes (e.g. landing /)
+// ---------------------------------------------------------------------------
+let _fallbackDoc: AuxweaveDocument = createEmptyAuxweaveDocument(1080, 1080)
+let _fallbackSelectedIds: string[] = []
+
+export function installFallbackEditorBridge(): void {
+  if (typeof window === 'undefined') return
+  const win = window as unknown as Record<string, unknown>
+  if (typeof win.__Auxweave_GET_STRUCTURED_STATE__ === 'function') return
+
+  mountWebMCPEditorBridge({
+    store: {
+      getState: () => ({
+        doc: _fallbackDoc,
+        selectedIds: _fallbackSelectedIds,
+        setDoc: updater => {
+          _fallbackDoc = updater(_fallbackDoc)
+        },
+        setSelectedIds: ids => {
+          _fallbackSelectedIds = ids
+        },
+      }),
+    },
+    getVectorBoardDocs: () => ({}),
+  })
 }
 
 // Singleton guard — survives Strict Mode double-invoke but prevents re-registration

@@ -4,9 +4,9 @@ import {
   GeometricShapes02Icon,
   Image01Icon,
   TextBoldIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
-import { createFileRoute } from "@tanstack/react-router";
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
+import { createFileRoute } from '@tanstack/react-router'
 import {
   motion,
   useInView,
@@ -14,191 +14,185 @@ import {
   useScroll,
   useSpring,
   useTransform,
-} from "motion/react";
-import { usePostHog } from "posthog-js/react";
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import doodleSvgRaw from "../assets/doodle.svg?raw";
-import NewCanvasDialog from "../components/new-canvas-dialog";
-import { idbListDocuments } from "../lib/auxweave-editor-idb";
+} from 'motion/react'
+import { usePostHog } from 'posthog-js/react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import doodleSvgRaw from '../assets/doodle.svg?raw'
+import NewCanvasDialog from '../components/new-canvas-dialog'
+import { idbListDocuments } from '../lib/auxweave-editor-idb'
 
-export const Route = createFileRoute("/")({ component: Landing });
+export const Route = createFileRoute('/')({ component: Landing })
 
 type EssentialTool = {
-  name: string;
-  note: string;
-  icon: IconSvgElement;
-  accent: string;
-  accentSoft: string;
-};
+  name: string
+  note: string
+  icon: IconSvgElement
+  accent: string
+  accentSoft: string
+}
 
 const essentialTools: EssentialTool[] = [
   {
-    name: "Text",
-    note: "Type, hierarchy, and alignment.",
+    name: 'Text',
+    note: 'Type, hierarchy, and alignment.',
     icon: TextBoldIcon,
-    accent: "#ef8b74",
-    accentSoft: "rgba(239, 139, 116, 0.22)",
+    accent: '#ef8b74',
+    accentSoft: 'rgba(239, 139, 116, 0.22)',
   },
   {
-    name: "Shapes",
-    note: "Clean primitives for quick composition.",
+    name: 'Shapes',
+    note: 'Clean primitives for quick composition.',
     icon: GeometricShapes02Icon,
-    accent: "#f0a74b",
-    accentSoft: "rgba(240, 167, 75, 0.22)",
+    accent: '#f0a74b',
+    accentSoft: 'rgba(240, 167, 75, 0.22)',
   },
   {
-    name: "Images",
-    note: "Drop in assets and build around them.",
+    name: 'Images',
+    note: 'Drop in assets and build around them.',
     icon: Image01Icon,
-    accent: "#89a36f",
-    accentSoft: "rgba(137, 163, 111, 0.2)",
+    accent: '#89a36f',
+    accentSoft: 'rgba(137, 163, 111, 0.2)',
   },
   {
-    name: "Crop",
-    note: "Trim the frame without losing the energy.",
+    name: 'Crop',
+    note: 'Trim the frame without losing the energy.',
     icon: CropIcon,
-    accent: "#5d9bc7",
-    accentSoft: "rgba(93, 155, 199, 0.2)",
+    accent: '#5d9bc7',
+    accentSoft: 'rgba(93, 155, 199, 0.2)',
   },
   {
-    name: "Export",
-    note: "Push the final image out when it lands.",
+    name: 'Export',
+    note: 'Push the final image out when it lands.',
     icon: FileExportIcon,
-    accent: "#f17f8f",
-    accentSoft: "rgba(241, 127, 143, 0.18)",
+    accent: '#f17f8f',
+    accentSoft: 'rgba(241, 127, 143, 0.18)',
   },
-];
-
+]
 
 function Landing() {
-  const navigate = Route.useNavigate();
-  const [newCanvasOpen, setNewCanvasOpen] = useState(false);
-  const [savedFileCount, setSavedFileCount] = useState<number | null>(null);
-  const [activeToolIndex, setActiveToolIndex] = useState(0);
-  const posthog = usePostHog();
-  const toolsSectionRef = useRef<HTMLDivElement | null>(null);
-  const vectorsSectionRef = useRef<HTMLElement | null>(null);
-  const activeToolIndexRef = useRef(0);
+  const navigate = Route.useNavigate()
+  const [newCanvasOpen, setNewCanvasOpen] = useState(false)
+  const [savedFileCount, setSavedFileCount] = useState<number | null>(null)
+  const [activeToolIndex, setActiveToolIndex] = useState(0)
+  const posthog = usePostHog()
+  const toolsSectionRef = useRef<HTMLDivElement | null>(null)
+  const vectorsSectionRef = useRef<HTMLElement | null>(null)
+  const activeToolIndexRef = useRef(0)
   const vectorsInView = useInView(vectorsSectionRef, {
     once: true,
     amount: 0.35,
-  });
+  })
   const { scrollYProgress } = useScroll({
     target: toolsSectionRef,
-    offset: ["start start", "end end"],
-  });
+    offset: ['start start', 'end end'],
+  })
   const smoothToolsProgress = useSpring(scrollYProgress, {
     stiffness: 210,
     damping: 32,
     mass: 0.22,
-  });
+  })
   const trackX = useTransform(
     smoothToolsProgress,
     [0, 1],
-    ["0%", `-${((essentialTools.length - 1) * 100) / essentialTools.length}%`],
-  );
+    ['0%', `-${((essentialTools.length - 1) * 100) / essentialTools.length}%`],
+  )
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
     void idbListDocuments()
-      .then((docs) => {
-        if (!cancelled) setSavedFileCount(docs.length);
+      .then(docs => {
+        if (!cancelled) setSavedFileCount(docs.length)
       })
       .catch(() => {
-        if (!cancelled) setSavedFileCount(null);
-      });
+        if (!cancelled) setSavedFileCount(null)
+      })
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
-  useMotionValueEvent(smoothToolsProgress, "change", (latest) => {
+  useMotionValueEvent(smoothToolsProgress, 'change', latest => {
     const nextIndex = Math.min(
       essentialTools.length - 1,
-      Math.max(
-        0,
-        Math.round(latest * Math.max(essentialTools.length - 1, 1)),
-      ),
-    );
-    const previousIndex = activeToolIndexRef.current;
+      Math.max(0, Math.round(latest * Math.max(essentialTools.length - 1, 1))),
+    )
+    const previousIndex = activeToolIndexRef.current
     if (nextIndex === previousIndex) {
-      return;
+      return
     }
-    activeToolIndexRef.current = nextIndex;
-    setActiveToolIndex(nextIndex);
-  });
+    activeToolIndexRef.current = nextIndex
+    setActiveToolIndex(nextIndex)
+  })
 
   const openEditor = useCallback(() => {
     void (async () => {
       try {
-        const docs = await idbListDocuments();
-        setSavedFileCount(docs.length);
-        const destination = docs.length > 0 ? "/files" : "/create";
-        posthog.capture("editor_opened", {
-          source: "landing_hero",
+        const docs = await idbListDocuments()
+        setSavedFileCount(docs.length)
+        const destination = docs.length > 0 ? '/files' : '/create'
+        posthog.capture('editor_opened', {
+          source: 'landing_hero',
           destination,
           existing_file_count: docs.length,
-        });
+        })
         if (docs.length > 0) {
-          await navigate({ to: "/files" });
-          return;
+          await navigate({ to: '/files' })
+          return
         }
       } catch (err) {
-        posthog.captureException(err);
+        posthog.captureException(err)
       }
-      setNewCanvasOpen(true);
-    })();
-  }, [navigate, posthog]);
+      setNewCanvasOpen(true)
+    })()
+  }, [navigate, posthog])
 
-  const hasSavedFiles = (savedFileCount ?? 0) > 0;
-  const primaryCtaLabel = hasSavedFiles ? "Open files" : "Open editor";
-  const activeTool = essentialTools[activeToolIndex];
-  const activeToolCount = String(activeToolIndex + 1).padStart(2, "0");
-  const totalToolCount = String(essentialTools.length).padStart(2, "0");
+  const hasSavedFiles = (savedFileCount ?? 0) > 0
+  const primaryCtaLabel = hasSavedFiles ? 'Open files' : 'Open editor'
+  const activeTool = essentialTools[activeToolIndex]
+  const activeToolCount = String(activeToolIndex + 1).padStart(2, '0')
+  const totalToolCount = String(essentialTools.length).padStart(2, '0')
   const toolsShellStyle = {
-    "--tool-count": essentialTools.length,
-    "--tool-accent": activeTool.accent,
-    "--tool-accent-soft": activeTool.accentSoft,
+    '--tool-count': essentialTools.length,
+    '--tool-accent': activeTool.accent,
+    '--tool-accent-soft': activeTool.accentSoft,
     minHeight: `${essentialTools.length * 68}vh`,
-  } as CSSProperties;
+  } as CSSProperties
   const doodleMarkup = useMemo(() => {
-    let pathIndex = 0;
+    let pathIndex = 0
 
     return doodleSvgRaw
-      .replace(/<\?xml[\s\S]*?\?>\s*/g, "")
+      .replace(/<\?xml[\s\S]*?\?>\s*/g, '')
       .replace(/<svg\b([^>]*)>/, (_match, attrs) => {
-        const cleanAttrs = attrs
-          .replace(/\swidth="[^"]*"/g, "")
-          .replace(/\sheight="[^"]*"/g, "");
+        const cleanAttrs = attrs.replace(/\swidth="[^"]*"/g, '').replace(/\sheight="[^"]*"/g, '')
         const withViewBox = /viewBox=/.test(cleanAttrs)
           ? cleanAttrs
-          : `${cleanAttrs} viewBox="0 0 1000 1000"`;
+          : `${cleanAttrs} viewBox="0 0 1000 1000"`
 
-        return `<svg${withViewBox}>`;
+        return `<svg${withViewBox}>`
       })
-      .replace(
-        /<path\b([^>]*?)fill="([^"]+)"([^>]*)\/>/g,
-        (_match, before, fill, after) => {
-          const nextIndex = pathIndex++;
+      .replace(/<path\b([^>]*?)fill="([^"]+)"([^>]*)\/>/g, (_match, before, fill, after) => {
+        const nextIndex = pathIndex++
 
-          return `<path${before}fill="${fill}"${after} pathLength="1" style="--path-index:${nextIndex}; --path-fill:${fill};" />`;
-        },
-      );
-  }, []);
+        return `<path${before}fill="${fill}"${after} pathLength="1" style="--path-index:${nextIndex}; --path-fill:${fill};" />`
+      })
+  }, [])
 
   return (
     <main className="landing-page">
       <section className="hero-page relative flex min-h-[100dvh] flex-col justify-center overflow-hidden px-5 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
         <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-6 sm:px-10 lg:px-16">
           <div className="flex items-center gap-2.5">
-            <span className="display-title text-2xl font-bold tracking-tight text-[var(--text)]">Auxweave</span>
+            <span className="display-title text-2xl font-bold tracking-tight text-[var(--text)]">
+              Auxweave
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href="/create"
+              className="inline-flex items-center justify-center rounded-full bg-black px-5 py-2 text-sm font-medium text-white no-underline transition-all hover:bg-neutral-800"
+            >
+              Launch Live Canvas
+            </a>
           </div>
         </header>
         <div className="hero-bg-orb hero-bg-orb-a" aria-hidden="true" />
@@ -213,9 +207,15 @@ function Landing() {
               Create, compose, and iterate with AI that can actually work inside your design.
             </p>
             <div className="flex flex-wrap items-center gap-4">
+              <a
+                href="/create"
+                className="bg-black text-white inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium no-underline shadow-lg shadow-black/10 transition-all hover:bg-neutral-800 hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
+              >
+                Launch Live Canvas
+              </a>
               <button
                 type="button"
-                className="bg-black text-white inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium shadow-lg shadow-black/10 transition-all hover:bg-neutral-800 hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
+                className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border border-black/[0.14] bg-white/85 px-8 py-3.5 text-base font-medium text-[var(--text)] backdrop-blur-sm transition-all hover:border-black/[0.25] hover:bg-white hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
                 onClick={openEditor}
               >
                 {primaryCtaLabel}
@@ -235,17 +235,11 @@ function Landing() {
 
       <section className="landing-section">
         <div className="landing-container">
-          <motion.div
-            ref={toolsSectionRef}
-            className="landing-tools-shell"
-            style={toolsShellStyle}
-          >
+          <motion.div ref={toolsSectionRef} className="landing-tools-shell" style={toolsShellStyle}>
             <div className="landing-tools-sticky">
               <div className="landing-tools-header">
                 <div className="landing-tools-headline">
-                  <h2 className="display-title landing-tools-title">
-                    All the essential tools.
-                  </h2>
+                  <h2 className="display-title landing-tools-title">All the essential tools.</h2>
                 </div>
 
                 <div className="landing-tools-meter" aria-hidden="true">
@@ -269,22 +263,22 @@ function Landing() {
                   }}
                 >
                   {essentialTools.map((tool, index) => {
-                    const isActive = index === activeToolIndex;
+                    const isActive = index === activeToolIndex
 
                     return (
                       <article
                         key={tool.name}
-                        className={`landing-tools-panel ${isActive ? "is-active" : ""}`}
+                        className={`landing-tools-panel ${isActive ? 'is-active' : ''}`}
                         style={
                           {
-                            "--panel-accent": tool.accent,
+                            '--panel-accent': tool.accent,
                           } as CSSProperties
                         }
                       >
                         <div className="landing-tools-panel-grid">
                           <div className="landing-tools-panel-copy">
                             <span className="landing-tools-panel-count">
-                              {String(index + 1).padStart(2, "0")}
+                              {String(index + 1).padStart(2, '0')}
                             </span>
                             <h3 className="display-title">{tool.name}</h3>
                             <p>{tool.note}</p>
@@ -299,7 +293,7 @@ function Landing() {
                               opacity: isActive ? 1 : 0.7,
                             }}
                             transition={{
-                              type: "spring",
+                              type: 'spring',
                               stiffness: 360,
                               damping: 28,
                             }}
@@ -314,7 +308,7 @@ function Landing() {
                           </motion.div>
                         </div>
                       </article>
-                    );
+                    )
                   })}
                 </motion.div>
               </div>
@@ -323,7 +317,7 @@ function Landing() {
                 {essentialTools.map((tool, index) => (
                   <span
                     key={tool.name}
-                    className={`landing-tools-strip-item ${index === activeToolIndex ? "is-active" : ""}`}
+                    className={`landing-tools-strip-item ${index === activeToolIndex ? 'is-active' : ''}`}
                   >
                     {tool.name}
                   </span>
@@ -334,25 +328,17 @@ function Landing() {
         </div>
       </section>
 
-      <section
-        ref={vectorsSectionRef}
-        className="landing-section landing-vectors-section"
-      >
+      <section ref={vectorsSectionRef} className="landing-section landing-vectors-section">
         <div className="landing-container">
           <div className="landing-vectors-shell">
             <div className="landing-vectors-header">
-              <h2 className="display-title landing-vectors-title">
-                Vectors
-              </h2>
+              <h2 className="display-title landing-vectors-title">Vectors</h2>
               <p className="landing-vectors-copy">
-                Every curve stays sharp, editable, and clean as the drawing
-                comes to life.
+                Every curve stays sharp, editable, and clean as the drawing comes to life.
               </p>
             </div>
 
-            <div
-              className={`landing-vectors-stage ${vectorsInView ? "is-visible" : ""}`}
-            >
+            <div className={`landing-vectors-stage ${vectorsInView ? 'is-visible' : ''}`}>
               <div className="landing-vectors-paper">
                 <div className="landing-vectors-paper-clip" aria-hidden="true" />
                 <div
@@ -378,7 +364,13 @@ function Landing() {
                 AI agents designing on your live canvas.
               </h2>
               <p className="text-base leading-relaxed text-[var(--text-muted)] sm:text-lg">
-                Instead of static bitmaps or coordinate hallucinations, Auxweave exposes 17 live vector tools to agents via <code className="rounded bg-black/[0.06] px-1.5 py-0.5 font-mono text-sm text-[var(--text)]">document.modelContext</code>. Humans direct, drag, and fine-tune while AI models construct structured auto-layouts, type hierarchies, and color harmonies in real time.
+                Instead of static bitmaps or coordinate hallucinations, Auxweave exposes 17 live
+                vector tools to agents via{' '}
+                <code className="rounded bg-black/[0.06] px-1.5 py-0.5 font-mono text-sm text-[var(--text)]">
+                  document.modelContext
+                </code>
+                . Humans direct, drag, and fine-tune while AI models construct structured
+                auto-layouts, type hierarchies, and color harmonies in real time.
               </p>
             </div>
 
@@ -387,9 +379,12 @@ function Landing() {
                 <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-mono text-sm font-bold">
                   &lt;/&gt;
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">Web-Native Layout Primitives</h3>
+                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">
+                  Web-Native Layout Primitives
+                </h3>
                 <p className="text-sm leading-relaxed text-[var(--text-muted)]">
-                  Flex containers, directional flow, alignment, and auto-gap solving. Agents reason with structural layout primitives instead of guessing absolute pixel coordinates.
+                  Flex containers, directional flow, alignment, and auto-gap solving. Agents reason
+                  with structural layout primitives instead of guessing absolute pixel coordinates.
                 </p>
               </div>
 
@@ -397,9 +392,12 @@ function Landing() {
                 <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-mono text-sm font-bold">
                   MCP
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">W3C WebMCP Standard</h3>
+                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">
+                  W3C WebMCP Standard
+                </h3>
                 <p className="text-sm leading-relaxed text-[var(--text-muted)]">
-                  Built on the official WebMCP browser specification. Direct integration via the Chrome DevTools WebMCP panel or the embedded multi-model AI designer panel.
+                  Built on the official WebMCP browser specification. Direct integration via the
+                  Chrome DevTools WebMCP panel or the embedded multi-model AI designer panel.
                 </p>
               </div>
 
@@ -407,16 +405,21 @@ function Landing() {
                 <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 font-mono text-xs font-bold uppercase tracking-wider">
                   LIVE
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">Real-Time Co-Design</h3>
+                <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">
+                  Real-Time Co-Design
+                </h3>
                 <p className="text-sm leading-relaxed text-[var(--text-muted)]">
-                  Zero export friction. Every element created by an agent is an editable vector object that humans can select, recolor, and transform instantly.
+                  Zero export friction. Every element created by an agent is an editable vector
+                  object that humans can select, recolor, and transform instantly.
                 </p>
               </div>
             </div>
 
             <div className="mt-8 rounded-2xl border border-black/[0.08] bg-neutral-900 p-5 text-neutral-200 shadow-inner sm:p-6">
               <div className="mb-3 flex items-center justify-between text-xs text-neutral-400">
-                <span className="font-mono uppercase tracking-widest text-emerald-400">Live Agent Tool Call</span>
+                <span className="font-mono uppercase tracking-widest text-emerald-400">
+                  Live Agent Tool Call
+                </span>
                 <span className="font-mono">document.modelContext</span>
               </div>
               <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-neutral-300 sm:text-sm">
@@ -436,9 +439,7 @@ function Landing() {
         <div className="landing-container">
           <div className="landing-cta-band landing-cta-band-only">
             <div>
-              <h2 className="display-title landing-cta-title">
-                Start making something.
-              </h2>
+              <h2 className="display-title landing-cta-title">Start making something.</h2>
             </div>
 
             <div className="landing-cta-actions">
@@ -462,10 +463,7 @@ function Landing() {
         </div>
       </section>
 
-      <NewCanvasDialog
-        open={newCanvasOpen}
-        onClose={() => setNewCanvasOpen(false)}
-      />
+      <NewCanvasDialog open={newCanvasOpen} onClose={() => setNewCanvasOpen(false)} />
     </main>
-  );
+  )
 }

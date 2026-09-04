@@ -28,7 +28,7 @@ export type RegisteredTool = {
   name: string
   title?: string
   description: string
-  inputSchema: string // JSON String
+  inputSchema: WebMCPToolInputSchema | Record<string, unknown>
 }
 
 export type ModelContextRegisterToolOptions = {
@@ -40,8 +40,8 @@ export interface ModelContextInterface extends EventTarget {
   registerTool(tool: WebMCPTool, options?: ModelContextRegisterToolOptions): Promise<void>
   getTools(options?: { name?: string }): Promise<RegisteredTool[]>
   executeTool(
-    toolRef: { name: string },
-    inputObject?: object,
+    toolRef: { name: string } | string,
+    inputObject?: unknown,
     options?: { signal?: AbortSignal },
   ): Promise<string>
   ontoolchange: ((this: ModelContextInterface, ev: Event) => any) | null
@@ -81,27 +81,35 @@ class AuxiliaryModelContext extends EventTarget implements ModelContextInterface
 
     return filtered.map(t => {
       const schemaObj =
-        typeof t.inputSchema === 'object' && t.inputSchema !== null ? t.inputSchema : {}
-      const schemaStr = JSON.stringify(schemaObj)
-      // Satisfies both object consumers (Chrome DevTools UI) and string consumers (JSON-schema parsers)
-      const schemaHybrid = Object.assign(new String(schemaStr), schemaObj) as unknown as string
+        typeof t.inputSchema === 'object' && t.inputSchema !== null
+          ? (t.inputSchema as Record<string, unknown>)
+          : { type: 'object', properties: {} }
+
       return {
         name: t.name,
         title: t.title ?? t.name,
         description: t.description,
-        inputSchema: schemaHybrid,
+        inputSchema: schemaObj,
       }
     })
   }
 
   async executeTool(
-    toolRef: { name: string },
-    inputObject: object = {},
+    toolRef: { name: string } | string,
+    inputObject: unknown = {},
     options?: { signal?: AbortSignal },
   ): Promise<string> {
-    const tool = this.tools.get(toolRef.name)
+    const toolName = typeof toolRef === 'string' ? toolRef : toolRef?.name
+    if (!toolName) {
+      throw new DOMException(
+        'WebMCP tool reference must specify a valid tool name',
+        'NotFoundError',
+      )
+    }
+
+    const tool = this.tools.get(toolName)
     if (!tool) {
-      throw new DOMException(`WebMCP tool '${toolRef.name}' not found`, 'NotFoundError')
+      throw new DOMException(`WebMCP tool '${toolName}' not found`, 'NotFoundError')
     }
 
     const controller = new AbortController()
@@ -114,9 +122,22 @@ class AuxiliaryModelContext extends EventTarget implements ModelContextInterface
       }
     }
 
+    // Support both JSON string arguments (used by Chrome native WebMCP & extension bridge)
+    // and parsed object arguments.
+    let parsedArgs: Record<string, unknown> = {}
+    if (typeof inputObject === 'string') {
+      try {
+        parsedArgs = JSON.parse(inputObject)
+      } catch {
+        parsedArgs = {}
+      }
+    } else if (inputObject && typeof inputObject === 'object') {
+      parsedArgs = inputObject as Record<string, unknown>
+    }
+
     try {
-      const result = await tool.execute(inputObject, { signal: controller.signal })
-      return JSON.stringify(result ?? null)
+      const result = await tool.execute(parsedArgs, { signal: controller.signal })
+      return typeof result === 'string' ? result : JSON.stringify(result ?? null)
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         throw err
@@ -203,16 +224,20 @@ export function initWebMCPBridge(): ModelContextInterface {
 
   const instance = win[POLYFILL_KEY] as AuxiliaryModelContext
 
+  // If document does not already have a native modelContext, expose the polyfill
   if (typeof document !== 'undefined') {
-    try {
-      Object.defineProperty(document, 'modelContext', {
-        value: instance,
-        writable: true,
-        configurable: true,
-        enumerable: true,
-      })
-    } catch {
-      ;(document as unknown as Record<string, unknown>).modelContext = instance
+    const docAny = document as unknown as Record<string, unknown>
+    if (!docAny.modelContext || docAny.modelContext instanceof AuxiliaryModelContext) {
+      try {
+        Object.defineProperty(document, 'modelContext', {
+          value: instance,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        })
+      } catch {
+        docAny.modelContext = instance
+      }
     }
   }
 
@@ -228,15 +253,18 @@ export function initWebMCPBridge(): ModelContextInterface {
   }
 
   if (typeof navigator !== 'undefined') {
-    try {
-      Object.defineProperty(navigator, 'modelContext', {
-        value: instance,
-        writable: true,
-        configurable: true,
-        enumerable: true,
-      })
-    } catch {
-      ;(navigator as unknown as Record<string, unknown>).modelContext = instance
+    const navAny = navigator as unknown as Record<string, unknown>
+    if (!navAny.modelContext || navAny.modelContext instanceof AuxiliaryModelContext) {
+      try {
+        Object.defineProperty(navigator, 'modelContext', {
+          value: instance,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        })
+      } catch {
+        navAny.modelContext = instance
+      }
     }
   }
 
@@ -449,10 +477,14 @@ export function convertWebMCPToolsToOpenAI(tools: RegisteredTool[]): Array<{
 }> {
   return tools.map(tool => {
     let params: Record<string, unknown> = { type: 'object', properties: {}, required: [] }
-    try {
-      params = JSON.parse(tool.inputSchema)
-    } catch {
-      // use default
+    if (typeof tool.inputSchema === 'object' && tool.inputSchema !== null) {
+      params = tool.inputSchema as Record<string, unknown>
+    } else if (typeof tool.inputSchema === 'string') {
+      try {
+        params = JSON.parse(tool.inputSchema)
+      } catch {
+        // use default
+      }
     }
     return {
       type: 'function',
@@ -617,6 +649,7 @@ export interface AgentExecutionCallbacks {
 }
 
 interface _NebiusChoice {
+  index?: number
   message: {
     role: string
     content: string | null
@@ -633,7 +666,7 @@ async function _callNebius(
   signal?: AbortSignal,
 ): Promise<{ choices: _NebiusChoice[] }> {
   const rawEndpoint = getStoredEndpoint()
-  let endpoint = resolveChatCompletionsUrl(rawEndpoint)
+  const endpoint = resolveChatCompletionsUrl(rawEndpoint)
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
@@ -742,7 +775,7 @@ async function _callNebiusStream(
   signal?: AbortSignal,
 ): Promise<{ choices: _NebiusChoice[] }> {
   const rawEndpoint = getStoredEndpoint()
-  let endpoint = resolveChatCompletionsUrl(rawEndpoint)
+  const endpoint = resolveChatCompletionsUrl(rawEndpoint)
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
@@ -906,7 +939,7 @@ export async function fetchAgentRouterModels(apiKey: string): Promise<NebiusMode
   if (!trimmedKey) return []
 
   const rawEndpoint = getStoredEndpoint()
-  let endpoint = rawEndpoint.includes('agentrouter.org')
+  const endpoint = rawEndpoint.includes('agentrouter.org')
     ? resolveChatCompletionsUrl(rawEndpoint).replace('/chat/completions', '/models')
     : 'https://agentrouter.org/v1/models'
 
@@ -1179,7 +1212,12 @@ export async function executeAgentTurn(
   history: ChatMessage[],
   callbacks: AgentExecutionCallbacks = {},
   signal?: AbortSignal,
-): Promise<{ reply: string; toolCalls: ToolCallRecord[] }> {
+): Promise<{
+  reply: string
+  toolCalls: ToolCallRecord[]
+  reasoning?: string
+  trace?: AgentTraceStep[]
+}> {
   const apiKey = getStoredApiKey()
   if (!apiKey)
     throw new Error('Nebius API Token is missing. Please configure it in agent settings.')

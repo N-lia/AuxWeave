@@ -7,7 +7,8 @@
 [![Built with TypeScript](https://img.shields.io/badge/Built_with-TypeScript-3178c6.svg)](https://www.typescriptlang.org/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
-**Live Application**: [https://aux-weaver.vercel.app](https://aux-weaver.vercel.app)
+**Live Canvas & WebMCP Editor**: [https://aux-weaver.vercel.app/create](https://aux-weaver.vercel.app/create)  
+**Homepage**: [https://aux-weaver.vercel.app](https://aux-weaver.vercel.app)
 
 ---
 

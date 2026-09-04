@@ -186,7 +186,7 @@ export const verifyCanvasAlignmentTool: WebMCPTool = {
     },
   },
   execute: async (
-    input: { targetReferenceId?: string },
+    _input: { targetReferenceId?: string },
     options: ToolExecuteCallbackOptions = { signal: NOOP_SIGNAL },
   ) => {
     if (options.signal?.aborted) throw new DOMException('Aborted', 'AbortError')

@@ -6,11 +6,7 @@
  * semantic component declarations into exact pixel-positioned SceneObjects.
  */
 
-import {
-  ROLE_TYPOGRAPHIC_SCALE,
-  type TypographicRole,
-  computeRoleFontSize,
-} from './layout-engine'
+import { computeRoleFontSize, type TypographicRole } from './layout-engine'
 
 export type FlexDirection = 'column' | 'row'
 export type FlexJustify =
@@ -23,9 +19,7 @@ export type FlexJustify =
 export type FlexAlign = 'start' | 'center' | 'end' | 'stretch'
 export type FlexSizing = number | 'fill' | 'hug'
 
-export type FlexPadding =
-  | number
-  | { top?: number; right?: number; bottom?: number; left?: number }
+export type FlexPadding = number | { top?: number; right?: number; bottom?: number; left?: number }
 
 export interface FlexContainerChildSpec {
   type:
@@ -261,8 +255,7 @@ export function solveFlexContainer(
       spec.type === 'caption'
 
     if (isText) {
-      const role: TypographicRole =
-        spec.type === 'text' ? 'body' : (spec.type as TypographicRole)
+      const role: TypographicRole = spec.type === 'text' ? 'body' : (spec.type as TypographicRole)
       const { fontSize } = computeRoleFontSize(
         role,
         parentBounds.width,
@@ -271,12 +264,7 @@ export function solveFlexContainer(
       )
 
       const maxTextW = isCol ? innerParentW : Math.round(innerParentW * 0.7)
-      const dims = estimateTextDimensions(
-        spec.text || '',
-        fontSize,
-        maxTextW,
-        spec.width,
-      )
+      const dims = estimateTextDimensions(spec.text || '', fontSize, maxTextW, spec.width)
 
       measuredChildren.push({
         spec: { ...spec, fontSize },
@@ -312,17 +300,9 @@ export function solveFlexContainer(
       const defH = isLine ? 16 : defW
 
       const w =
-        typeof spec.width === 'number'
-          ? spec.width
-          : spec.width === 'fill'
-            ? innerParentW
-            : defW
+        typeof spec.width === 'number' ? spec.width : spec.width === 'fill' ? innerParentW : defW
       const h =
-        typeof spec.height === 'number'
-          ? spec.height
-          : spec.height === 'fill'
-            ? innerParentH
-            : defH
+        typeof spec.height === 'number' ? spec.height : spec.height === 'fill' ? innerParentH : defH
 
       measuredChildren.push({
         spec,
@@ -370,10 +350,7 @@ export function solveFlexContainer(
 
   // Phase 2: Compute hug container bounds if necessary
   const totalGaps = Math.max(0, measuredChildren.length - 1) * gap
-  const contentMainSize = measuredChildren.reduce(
-    (acc, c) => acc + (isCol ? c.height : c.width),
-    0,
-  )
+  const contentMainSize = measuredChildren.reduce((acc, c) => acc + (isCol ? c.height : c.width), 0)
   const maxCrossSize = measuredChildren.reduce(
     (max, c) => Math.max(max, isCol ? c.width : c.height),
     0,
@@ -402,8 +379,9 @@ export function solveFlexContainer(
 
   // Phase 3: Position children along main axis
   const availMain =
-    (isCol ? containerH - padding.top - padding.bottom : containerW - padding.left - padding.right) -
-    totalGaps
+    (isCol
+      ? containerH - padding.top - padding.bottom
+      : containerW - padding.left - padding.right) - totalGaps
   const fixedMainSize = measuredChildren
     .filter(c => !c.isFillMain)
     .reduce((sum, c) => sum + (isCol ? c.height : c.width), 0)
@@ -411,9 +389,7 @@ export function solveFlexContainer(
   const fillMainChildren = measuredChildren.filter(c => c.isFillMain)
   const remainingMain = Math.max(0, availMain - fixedMainSize)
   const fillMainItemSize =
-    fillMainChildren.length > 0
-      ? Math.round(remainingMain / fillMainChildren.length)
-      : 0
+    fillMainChildren.length > 0 ? Math.round(remainingMain / fillMainChildren.length) : 0
 
   // Apply fill main sizing
   for (const c of fillMainChildren) {
@@ -422,8 +398,7 @@ export function solveFlexContainer(
   }
 
   const effectiveTotalMain =
-    measuredChildren.reduce((sum, c) => sum + (isCol ? c.height : c.width), 0) +
-    totalGaps
+    measuredChildren.reduce((sum, c) => sum + (isCol ? c.height : c.width), 0) + totalGaps
   const totalContainerInnerMain = isCol
     ? containerH - padding.top - padding.bottom
     : containerW - padding.left - padding.right
@@ -509,4 +484,3 @@ export function solveFlexContainer(
     children: solvedChildren,
   }
 }
-

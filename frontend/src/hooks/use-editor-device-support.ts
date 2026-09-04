@@ -5,20 +5,30 @@ function detectEditorUnsupportedOnThisDevice(): boolean {
     return false
   }
 
+  try {
+    if (
+      window.location.search.includes('force=true') ||
+      sessionStorage.getItem('auxweave_force_editor') === 'true'
+    ) {
+      return false
+    }
+  } catch {
+    /* ignore storage access issues */
+  }
+
   const nav = navigator as Navigator & {
     userAgentData?: { mobile?: boolean }
   }
 
   const uaDataMobile = nav.userAgentData?.mobile === true
   const uaMobile =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(
-      navigator.userAgent,
-    )
-  const coarseCompact =
-    window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches ||
-    (navigator.maxTouchPoints > 1 && window.innerWidth <= 1024)
+    /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent) &&
+    !/iPad|Tablet/i.test(navigator.userAgent)
 
-  return uaDataMobile || uaMobile || coarseCompact
+  // Only flag actual small mobile phone viewports
+  const isNarrowMobile = (uaDataMobile || uaMobile) && window.innerWidth <= 640
+
+  return isNarrowMobile
 }
 
 export function useEditorUnsupportedOnThisDevice(): boolean {

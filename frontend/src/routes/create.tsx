@@ -123,12 +123,30 @@ function CreatePage() {
               your files from here.
             </Text>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                to="/files"
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem('auxweave_force_editor', 'true')
+                  } catch {
+                    /* ignore */
+                  }
+                  window.location.reload()
+                }}
                 className={buttonClassName({
                   variant: 'primary',
                   size: 'lg',
                   className: 'rounded-full border-0 px-8',
+                })}
+              >
+                Open editor anyway
+              </button>
+              <Link
+                to="/files"
+                className={buttonClassName({
+                  variant: 'secondary',
+                  size: 'lg',
+                  className: 'rounded-full border-black/[0.14] bg-white/70 px-8',
                 })}
               >
                 Go to files

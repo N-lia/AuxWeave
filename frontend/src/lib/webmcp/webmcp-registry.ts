@@ -45,28 +45,90 @@ export async function registerAllAuxweaveWebMCPTools(options?: RegistryOptions):
     ? allAuxweaveTools.filter(t => options.allowedToolNames!.includes(t.name))
     : allAuxweaveTools
 
+  const win = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>) : null
+  const doc =
+    typeof document !== 'undefined' ? (document as unknown as Record<string, unknown>) : null
+  const nativeDocMC =
+    doc?.modelContext && doc.modelContext !== mc
+      ? (doc.modelContext as { registerTool?: (t: unknown, opt?: unknown) => Promise<void> })
+      : null
+  const nativeWinMC =
+    win?.__nativeModelContext__ && win.__nativeModelContext__ !== mc
+      ? (win.__nativeModelContext__ as {
+          registerTool?: (t: unknown, opt?: unknown) => Promise<void>
+        })
+      : null
+
   for (const tool of toolsToRegister) {
     if (options?.signal?.aborted) break
+
+    // Register on Auxweave polyfill ModelContext
     await mc.registerTool(tool, { signal: options?.signal })
 
-    // Explicit W3C WebMCP document.modelContext registration
-    if (typeof document !== 'undefined' && 'modelContext' in document) {
-      const docMC = (
-        document as unknown as {
-          modelContext?: { registerTool?: (t: unknown, opt?: unknown) => Promise<void> }
-        }
-      ).modelContext
-      if (docMC && typeof docMC.registerTool === 'function' && docMC !== (mc as unknown)) {
+    const cleanSchema =
+      typeof tool.inputSchema === 'object' && tool.inputSchema !== null
+        ? tool.inputSchema
+        : { type: 'object', properties: {} }
+
+    const safeNativeExecute = async (input: unknown, opt?: unknown) => {
+      let parsed = input
+      if (typeof parsed === 'string') {
         try {
-          await docMC.registerTool(
-            {
-              name: tool.name,
-              description: tool.description,
-              inputSchema: tool.inputSchema,
-              execute: tool.execute,
-            },
-            { signal: options?.signal },
-          )
+          parsed = JSON.parse(parsed)
+        } catch {
+          parsed = {}
+        }
+      }
+      const res = await tool.execute(
+        parsed,
+        (opt as { signal: AbortSignal }) ?? { signal: new AbortController().signal },
+      )
+      return typeof res === 'string' ? res : JSON.stringify(res ?? null)
+    }
+
+    const nativeDeclaration = {
+      name: tool.name,
+      title: tool.title || tool.name,
+      description: tool.description,
+      inputSchema: cleanSchema,
+      execute: safeNativeExecute,
+    }
+
+    // Explicit W3C WebMCP document.modelContext registration (native Chrome Blink)
+    if (nativeDocMC && typeof nativeDocMC.registerTool === 'function') {
+      try {
+        await nativeDocMC.registerTool(nativeDeclaration, { signal: options?.signal })
+      } catch {
+        try {
+          // Retry without title or options for strict WebIDL compatibility
+          await nativeDocMC.registerTool({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: cleanSchema,
+            execute: safeNativeExecute,
+          })
+        } catch {
+          /* ignore mirror registration errors */
+        }
+      }
+    }
+
+    // Mirror to window.__nativeModelContext__ if preserved separately
+    if (
+      nativeWinMC &&
+      nativeWinMC !== nativeDocMC &&
+      typeof nativeWinMC.registerTool === 'function'
+    ) {
+      try {
+        await nativeWinMC.registerTool(nativeDeclaration, { signal: options?.signal })
+      } catch {
+        try {
+          await nativeWinMC.registerTool({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: cleanSchema,
+            execute: safeNativeExecute,
+          })
         } catch {
           /* ignore mirror registration errors */
         }
@@ -74,33 +136,6 @@ export async function registerAllAuxweaveWebMCPTools(options?: RegistryOptions):
     }
 
     count++
-  }
-
-  // Also mirror tools to native Chrome browser ModelContext so Chrome DevTools WebMCP panel displays them
-  if (typeof window !== 'undefined') {
-    const win = window as unknown as {
-      __nativeModelContext__?: { registerTool?: (t: unknown, opt?: unknown) => Promise<void> }
-    }
-    const nativeMC = win.__nativeModelContext__
-    if (nativeMC && typeof nativeMC.registerTool === 'function') {
-      for (const tool of toolsToRegister) {
-        if (options?.signal?.aborted) break
-        try {
-          await nativeMC.registerTool(
-            {
-              name: tool.name,
-              title: tool.title || tool.name,
-              description: tool.description,
-              inputSchema: tool.inputSchema,
-              execute: tool.execute,
-            },
-            { signal: options?.signal },
-          )
-        } catch (e) {
-          console.warn(`Native Chrome WebMCP registration notice for '${tool.name}':`, e)
-        }
-      }
-    }
   }
 
   // Dispatch toolchange on document and window for DevTools extension discovery
