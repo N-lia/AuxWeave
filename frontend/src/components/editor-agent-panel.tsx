@@ -21,21 +21,13 @@ import {
 } from '../lib/editor-sidebar-panel-layout'
 import {
   AGENTROUTER_API_URL,
-  AGENTROUTER_BASE_URL,
   type AgentTraceStep,
   type ChatMessage,
   executeAgentTurn,
-  fetchAgentRouterModels,
-  GEMINI_API_URL,
   getStoredApiKey,
   getStoredEndpoint,
   getStoredModel,
   getWebMCPContext,
-  NEBIUS_DEFAULT_API_URL,
-  NEBIUS_MODELS,
-  NEBIUS_STUDIO_API_URL,
-  type NebiusModelOption,
-  OPENROUTER_API_URL,
   setStoredApiKey,
   setStoredEndpoint,
   setStoredModel,
@@ -222,40 +214,18 @@ function ToolTraceCard({
 
 export default function EditorAgentPanel({ open, onClose, active, onToggleActive }: Props) {
   const [apiKey, setApiKey] = useState<string>('')
-  const [apiEndpoint, setApiEndpoint] = useState<string>(NEBIUS_DEFAULT_API_URL)
-  const [selectedModel, setSelectedModel] = useState<string>('deepseek-ai/DeepSeek-V3-0324')
-  const [customModelId, setCustomModelId] = useState<string>('')
+  const [selectedModel, setSelectedModel] = useState<string>('moonshotai/kimi-k2.6')
   const [showKey, setShowKey] = useState<boolean>(false)
   const [showSettings, setShowSettings] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'trace' | 'tools'>('chat')
   const [keySavedToast, setKeySavedToast] = useState<boolean>(false)
-  const [endpointSavedToast, setEndpointSavedToast] = useState<boolean>(false)
+  const [modelSavedToast, setModelSavedToast] = useState<boolean>(false)
   const [copiedTraceToast, setCopiedTraceToast] = useState<boolean>(false)
 
   const [registeredToolsList, setRegisteredToolsList] = useState<
     Array<{ name: string; title: string; description: string; inputSchema: string }>
   >([])
   const [isRefreshingTools, setIsRefreshingTools] = useState<boolean>(false)
-
-  const [dynamicModels, setDynamicModels] = useState<NebiusModelOption[]>([])
-  const [isLoadingModels, setIsLoadingModels] = useState<boolean>(false)
-
-  const loadAgentRouterModels = useCallback(
-    async (key?: string) => {
-      const k = key ?? apiKey
-      if (!k || !apiEndpoint.includes('agentrouter.org')) return
-      setIsLoadingModels(true)
-      try {
-        const fetched = await fetchAgentRouterModels(k)
-        if (fetched.length > 0) {
-          setDynamicModels(fetched)
-        }
-      } finally {
-        setIsLoadingModels(false)
-      }
-    },
-    [apiKey, apiEndpoint],
-  )
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState<string>('')
@@ -291,22 +261,20 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
     void refreshRegisteredTools()
   }, [refreshRegisteredTools])
 
-  // Initialize stored credentials
+  // Initialize stored credentials (AgentRouter only)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const storedKey = getStoredApiKey()
     const storedModel = getStoredModel()
-    const storedEndpoint = getStoredEndpoint()
     setApiKey(storedKey)
     setSelectedModel(storedModel)
-    setApiEndpoint(storedEndpoint)
+    // Migrate any legacy non-AgentRouter endpoint to AgentRouter.
+    if (getStoredEndpoint() !== AGENTROUTER_API_URL) {
+      setStoredEndpoint(AGENTROUTER_API_URL)
+    }
 
     if (!storedKey) {
       setShowSettings(true)
-    } else if (storedEndpoint.includes('agentrouter.org')) {
-      void fetchAgentRouterModels(storedKey).then(models => {
-        if (models.length > 0) setDynamicModels(models)
-      })
     }
   }, [])
 
@@ -321,39 +289,15 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
     setStoredApiKey(apiKey)
     setKeySavedToast(true)
     setTimeout(() => setKeySavedToast(false), 2000)
-    if (apiEndpoint.includes('agentrouter.org')) {
-      void loadAgentRouterModels(apiKey)
-    }
   }
 
-  const handleSaveEndpoint = (url?: string) => {
-    const targetUrl = (url ?? apiEndpoint).trim()
-    setApiEndpoint(targetUrl)
-    setStoredEndpoint(targetUrl)
-    setEndpointSavedToast(true)
-    setTimeout(() => setEndpointSavedToast(false), 2000)
-  }
-
-  const handleSelectModel = (modelId: string) => {
-    setSelectedModel(modelId)
-    setStoredModel(modelId)
-    if (modelId.includes('minimax') || modelId.includes(':free')) {
-      if (apiEndpoint !== OPENROUTER_API_URL) {
-        handleSaveEndpoint(OPENROUTER_API_URL)
-      }
-    }
-  }
-
-  const handleSaveCustomModel = () => {
-    const trimmed = customModelId.trim()
+  const handleSaveModelName = () => {
+    const trimmed = selectedModel.trim()
     if (!trimmed) return
     setSelectedModel(trimmed)
     setStoredModel(trimmed)
-    if (trimmed.includes('minimax') || trimmed.includes(':free')) {
-      if (apiEndpoint !== OPENROUTER_API_URL) {
-        handleSaveEndpoint(OPENROUTER_API_URL)
-      }
-    }
+    setModelSavedToast(true)
+    setTimeout(() => setModelSavedToast(false), 2000)
   }
 
   const handleStop = () => {
@@ -387,7 +331,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
     const currentKey = getStoredApiKey()
     if (!currentKey) {
       setShowSettings(true)
-      setErrorMsg('Please enter your Nebius API Token first to start using the co-design agent.')
+      setErrorMsg('Please enter your AgentRouter API key first to start using the co-design agent.')
       return
     }
 
@@ -459,11 +403,11 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
     }
   }
 
-  const currentModelMeta = NEBIUS_MODELS.find(m => m.id === selectedModel) ?? {
+  const currentModelMeta = {
     id: selectedModel,
-    name: selectedModel.split('/')[1] || selectedModel,
-    provider: 'Custom',
-    description: 'Custom Nebius Token Factory model',
+    name: selectedModel.split('/')[1] || selectedModel || 'AgentRouter model',
+    provider: 'AgentRouter',
+    description: 'AgentRouter model',
   }
 
   const totalSessionTools = messages.reduce((acc, m) => acc + (m.toolCalls?.length ?? 0), 0)
@@ -486,7 +430,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-neutral-900 truncate">
-                Nebius AI Agent
+                AI Agent
               </span>
               <span
                 className={[
@@ -611,33 +555,20 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
           <div className="rounded-2xl border border-black/[0.08] bg-white p-4 space-y-3 shadow-2xs">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-neutral-900 text-xs">
-                {apiEndpoint.includes('openrouter.ai') ? 'OpenRouter API Key' : 'Nebius API Token'}
+                AgentRouter API Key
               </span>
               <a
-                href={
-                  apiEndpoint.includes('googleapis.com')
-                    ? 'https://aistudio.google.com/app/apikey'
-                    : apiEndpoint.includes('openrouter.ai')
-                      ? 'https://openrouter.ai/keys'
-                      : 'https://tokenfactory.nebius.com/'
-                }
+                href="https://agentrouter.org"
                 target="_blank"
                 rel="noreferrer"
                 className="text-[11px] font-medium text-blue-600 hover:underline"
               >
-                {apiEndpoint.includes('googleapis.com')
-                  ? 'Google AI Studio Keys ↗'
-                  : apiEndpoint.includes('openrouter.ai')
-                    ? 'OpenRouter Keys ↗'
-                    : 'Nebius Console ↗'}
+                AgentRouter Keys ↗
               </a>
             </div>
             <p className="text-[11px] text-neutral-600 leading-relaxed">
-              {apiEndpoint.includes('googleapis.com')
-                ? 'Sign in with your Google account at aistudio.google.com to get a free Gemini API key. Stored securely in your browser.'
-                : apiEndpoint.includes('openrouter.ai')
-                  ? 'Used for OpenRouter models including minimax/minimax-m3:free. Stored securely in your browser.'
-                  : 'Inference is powered directly by Nebius Token Factory or Studio. Your token is stored locally in your browser.'}
+              All inference runs through AgentRouter. Your key is stored locally in your
+              browser.
             </p>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -645,15 +576,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
-                  placeholder={
-                    apiEndpoint.includes('googleapis.com')
-                      ? 'AIzaSy...'
-                      : apiEndpoint.includes('agentrouter.org')
-                        ? 'agentrouter-...'
-                        : apiEndpoint.includes('openrouter.ai')
-                          ? 'sk-or-v1-...'
-                          : 'Paste your API Key...'
-                  }
+                  placeholder="agentrouter-..."
                   className="w-full rounded-xl border border-black/[0.12] bg-white px-3 py-2 pr-9 text-xs font-mono text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none"
                 />
                 <button
@@ -680,214 +603,35 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
             )}
           </div>
 
-          {/* Inference Endpoint Configuration */}
-          <div className="rounded-2xl border border-black/[0.08] bg-white p-4 space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-neutral-900 text-xs">Inference Endpoint URL</span>
-              <span className="text-[10px] text-neutral-400 font-mono">OpenAI-Compatible</span>
-            </div>
-
-            {/* Quick Presets */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  handleSaveEndpoint(AGENTROUTER_API_URL)
-                  handleSelectModel('moonshotai/kimi-k2.6')
-                }}
-                className={`p-2 rounded-xl border text-left transition text-[11px] ${
-                  apiEndpoint === AGENTROUTER_API_URL
-                    ? 'border-purple-600 bg-purple-50/80 font-bold text-purple-900 shadow-2xs'
-                    : 'border-black/[0.08] hover:border-black/20 text-neutral-700 bg-neutral-50/50'
-                }`}
-              >
-                <div className="font-semibold text-[11px] flex items-center gap-1">
-                  <span>AgentRouter</span>
-                  <span className="text-[8px] bg-purple-100 text-purple-700 px-1 rounded-sm font-bold">
-                    Router
-                  </span>
-                </div>
-                <div className="text-[9px] text-neutral-400 font-mono truncate">
-                  agentrouter.org/v1
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  handleSaveEndpoint(GEMINI_API_URL)
-                  handleSelectModel('gemini-2.5-flash')
-                }}
-                className={`p-2 rounded-xl border text-left transition text-[11px] ${
-                  apiEndpoint === GEMINI_API_URL
-                    ? 'border-blue-600 bg-blue-50/80 font-bold text-blue-900 shadow-2xs'
-                    : 'border-black/[0.08] hover:border-black/20 text-neutral-700 bg-neutral-50/50'
-                }`}
-              >
-                <div className="font-semibold text-[11px] flex items-center gap-1">
-                  <span>Google Gemini</span>
-                  <span className="text-[8px] bg-blue-100 text-blue-700 px-1 rounded-sm font-bold">
-                    Fast
-                  </span>
-                </div>
-                <div className="text-[9px] text-neutral-400 font-mono truncate">
-                  generativelanguage.googleapis.com
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSaveEndpoint(OPENROUTER_API_URL)}
-                className={`p-2 rounded-xl border text-left transition text-[11px] ${
-                  apiEndpoint === OPENROUTER_API_URL
-                    ? 'border-blue-600 bg-blue-50/80 font-bold text-blue-900 shadow-2xs'
-                    : 'border-black/[0.08] hover:border-black/20 text-neutral-700 bg-neutral-50/50'
-                }`}
-              >
-                <div className="font-semibold text-[11px]">OpenRouter</div>
-                <div className="text-[9px] text-neutral-400 font-mono truncate">openrouter.ai</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSaveEndpoint(NEBIUS_DEFAULT_API_URL)}
-                className={`p-2 rounded-xl border text-left transition text-[11px] ${
-                  apiEndpoint === NEBIUS_DEFAULT_API_URL
-                    ? 'border-blue-600 bg-blue-50/80 font-bold text-blue-900 shadow-2xs'
-                    : 'border-black/[0.08] hover:border-black/20 text-neutral-700 bg-neutral-50/50'
-                }`}
-              >
-                <div className="font-semibold text-[11px]">Nebius Token Factory</div>
-                <div className="text-[9px] text-neutral-400 font-mono truncate">
-                  api.tokenfactory.nebius.com
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSaveEndpoint(NEBIUS_STUDIO_API_URL)}
-                className={`p-2 rounded-xl border text-left transition text-[11px] ${
-                  apiEndpoint === NEBIUS_STUDIO_API_URL
-                    ? 'border-blue-600 bg-blue-50/80 font-bold text-blue-900 shadow-2xs'
-                    : 'border-black/[0.08] hover:border-black/20 text-neutral-700 bg-neutral-50/50'
-                }`}
-              >
-                <div className="font-semibold text-[11px]">Nebius AI Studio</div>
-                <div className="text-[9px] text-neutral-400 font-mono truncate">
-                  api.studio.nebius.ai
-                </div>
-              </button>
-            </div>
-
-            {/* Custom URL Input */}
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="text"
-                value={apiEndpoint}
-                onChange={e => setApiEndpoint(e.target.value)}
-                placeholder="https://api.tokenfactory.nebius.com/v1/chat/completions"
-                className="w-full rounded-xl border border-black/[0.12] bg-white px-3 py-2 text-[11px] font-mono text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => handleSaveEndpoint()}
-                className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-black transition shrink-0"
-              >
-                Save
-              </button>
-            </div>
-
-            {endpointSavedToast && (
-              <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-600">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
-                <span>Endpoint updated successfully!</span>
-              </div>
-            )}
-          </div>
-
-          {/* Model Catalog */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-900">Choose Model</span>
-              {apiEndpoint.includes('agentrouter.org') && (
-                <button
-                  type="button"
-                  onClick={() => void loadAgentRouterModels(apiKey)}
-                  disabled={isLoadingModels}
-                  className="text-[10px] font-medium text-purple-600 hover:text-purple-800 transition flex items-center gap-1"
-                >
-                  <span className={isLoadingModels ? 'animate-spin inline-block' : ''}>↻</span>
-                  <span>{isLoadingModels ? 'Fetching models...' : 'Fetch Live Models'}</span>
-                </button>
-              )}
-            </div>
-            <div className="space-y-2">
-              {[
-                ...NEBIUS_MODELS,
-                ...dynamicModels.filter(dm => !NEBIUS_MODELS.some(m => m.id === dm.id)),
-              ].map(m => {
-                const isSelected = selectedModel === m.id
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleSelectModel(m.id)}
-                    className={[
-                      'w-full text-left rounded-2xl border p-3 transition text-xs relative group',
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/40 shadow-xs'
-                        : 'border-black/[0.07] bg-white hover:border-black/[0.15] hover:bg-neutral-50/50',
-                    ].join(' ')}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-neutral-900">{m.name}</span>
-                        <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600">
-                          {m.provider}
-                        </span>
-                        {m.recommended && (
-                          <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
-                            Recommended
-                          </span>
-                        )}
-                      </div>
-                      {isSelected && (
-                        <HugeiconsIcon
-                          icon={CheckmarkCircle02Icon}
-                          size={16}
-                          className="text-blue-600"
-                        />
-                      )}
-                    </div>
-                    <p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
-                      {m.description}
-                    </p>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Custom Model ID */}
+          {/* Model Name */}
           <div className="rounded-2xl border border-black/[0.07] bg-white p-3 space-y-2">
-            <span className="text-xs font-semibold text-neutral-900">Custom Nebius Model ID</span>
+            <span className="text-xs font-semibold text-neutral-900">Model Name</span>
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
+              Any model id served by AgentRouter, e.g. moonshotai/kimi-k2.6.
+            </p>
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={customModelId}
-                onChange={e => setCustomModelId(e.target.value)}
-                placeholder="e.g. meta-llama/Llama-3.3-70B-Instruct"
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                placeholder="e.g. moonshotai/kimi-k2.6"
                 className="flex-1 rounded-xl border border-black/[0.12] bg-white px-3 py-1.5 text-xs font-mono text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none"
               />
               <button
                 type="button"
-                onClick={handleSaveCustomModel}
-                disabled={!customModelId.trim()}
+                onClick={handleSaveModelName}
+                disabled={!selectedModel.trim()}
                 className="rounded-xl bg-neutral-900 px-3 py-1.5 font-medium text-white disabled:opacity-40"
               >
                 Use
               </button>
             </div>
+            {modelSavedToast && (
+              <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
+                <span>Model saved successfully!</span>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex items-center justify-between">
@@ -1131,7 +875,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
                     What would you like to design?
                   </h3>
                   <p className="text-xs text-neutral-500 max-w-[280px] mx-auto mt-1 leading-relaxed">
-                    Powered by Nebius Token Factory. Direct the agent to layout posters, compute
+                    Powered by AgentRouter. Direct the agent to layout posters, compute
                     spatial coordinates, and generate graphics.
                   </p>
                 </div>
@@ -1251,7 +995,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce" />
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s]" />
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s]" />
-                <span>Nebius model is selecting tools...</span>
+                <span>Model is selecting tools...</span>
               </div>
             )}
 
@@ -1279,7 +1023,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
                     handleSendPrompt(inputValue)
                   }
                 }}
-                placeholder="Ask Nebius agent to design or modify..."
+                placeholder="Ask the agent to design or modify..."
                 rows={1}
                 disabled={isGenerating}
                 className="max-h-28 min-h-[36px] flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0"
