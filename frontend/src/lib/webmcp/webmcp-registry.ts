@@ -48,6 +48,31 @@ export async function registerAllAuxweaveWebMCPTools(options?: RegistryOptions):
   for (const tool of toolsToRegister) {
     if (options?.signal?.aborted) break
     await mc.registerTool(tool, { signal: options?.signal })
+
+    // Explicit W3C WebMCP document.modelContext registration
+    if (typeof document !== 'undefined' && 'modelContext' in document) {
+      const docMC = (
+        document as unknown as {
+          modelContext?: { registerTool?: (t: unknown, opt?: unknown) => Promise<void> }
+        }
+      ).modelContext
+      if (docMC && typeof docMC.registerTool === 'function' && docMC !== (mc as unknown)) {
+        try {
+          await docMC.registerTool(
+            {
+              name: tool.name,
+              description: tool.description,
+              inputSchema: tool.inputSchema,
+              execute: tool.execute,
+            },
+            { signal: options?.signal },
+          )
+        } catch {
+          /* ignore mirror registration errors */
+        }
+      }
+    }
+
     count++
   }
 

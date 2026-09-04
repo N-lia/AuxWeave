@@ -35,6 +35,51 @@ The current editor supports:
 - JSON file import from the files page
 - Legacy-file conversion prompts before opening older documents
 
+## 🤖 WebMCP (Web Model Context Protocol) Integration
+
+Auxweave natively implements the **W3C WebMCP specification**, exposing browser-level tools to local and remote AI agents through `document.modelContext.registerTool()`.
+
+### Why WebMCP Fits Auxweave
+Design canvases are visually rich, interactive, and spatial. Traditional LLMs struggle with canvas manipulation because they cannot see element bounding boxes or perform complex 2D arithmetic in pure text. WebMCP enables:
+- **Bi-Directional Co-Creation**: The user and the AI agent work together on the exact same live canvas. When the user selects or moves an element, the agent perceives it; when the agent creates or aligns objects, the changes render in real-time.
+- **Web-Native Layout Primitives**: Agents invoke `create_flex_container` (Flexbox / Auto Layout) to generate posters, cards, and flyers with deterministic spacing, intrinsic text sizing, and zero overlap.
+- **Automated Layout Quality Assurance**: The agent validates contrast, optical balance, safe bounds, and color palettes via `validate_layout` and `repair_layout`.
+
+### Tool Registration Pattern
+All tools are registered directly with the browser's model context using the official WebMCP schema:
+
+```javascript
+document.modelContext.registerTool({
+  name: "create_flex_container",
+  description: "Creates a modern web-native flex layout container with automatic child positioning",
+  inputSchema: {
+    type: "object",
+    properties: {
+      direction: { type: "string", enum: ["column", "row"] },
+      gap: { type: "number" },
+      padding: { type: "number" },
+      children: { type: "array" }
+    },
+    required: ["children"]
+  },
+  execute: async (input) => {
+    // Canvas bridge execution
+    return { success: true, containerId: "..." }
+  }
+});
+```
+
+### WebMCP Tools Provided:
+- **Layout & Composition**: `create_flex_container`, `wrap_in_flex_container`, `apply_poster_template`
+- **Primitives**: `add_shape_primitive`, `add_text_element`, `add_hugeicon_symbol`, `add_image_element`
+- **Transforms & Alignment**: `update_transform`, `align_objects`
+- **Design Intelligence**: `apply_color_palette`, `validate_layout`, `repair_layout`
+- **Scene Inspection**: `get_canvas_scene_state`, `get_document_metadata`, `get_selected_elements`
+- **Moodboard Integration**: `get_moodboard_content`, `place_moodboard_image`
+
+### Connecting External Agents / Chrome Extensions
+Auxweave automatically dispatches `toolchange` events. External Chrome extensions (like the official Chrome DevTools WebMCP extension) can discover and invoke the tools directly on `document.modelContext`. Auxweave also includes a built-in **AI Co-Designer panel** supporting AgentRouter, OpenRouter, Google Gemini, and Nebius API endpoints.
+
 ## Architecture Overview
 
 ### Frontend
