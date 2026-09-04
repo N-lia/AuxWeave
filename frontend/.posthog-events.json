@@ -1,0 +1,82 @@
+[
+  {
+    "event": "editor_opened",
+    "description": "User clicks 'Open editor' button on the landing page",
+    "file": "src/routes/index.tsx"
+  },
+  {
+    "event": "canvas_created",
+    "description": "User creates a new canvas (from preset or custom dimensions)",
+    "file": "src/components/new-canvas-dialog.tsx"
+  },
+  {
+    "event": "file_opened",
+    "description": "User opens an existing file from the files grid",
+    "file": "src/components/file-grid-card.tsx"
+  },
+  {
+    "event": "file_duplicated",
+    "description": "User duplicates a file via the file card menu",
+    "file": "src/components/file-grid-card.tsx"
+  },
+  {
+    "event": "file_downloaded",
+    "description": "User downloads a file as JSON via the file card menu",
+    "file": "src/components/file-grid-card.tsx"
+  },
+  {
+    "event": "file_deleted",
+    "description": "User confirms deletion of one or more files",
+    "file": "src/routes/files.tsx"
+  },
+  {
+    "event": "ai_prompt_submitted",
+    "description": "User submits a prompt to the Magic AI panel",
+    "file": "src/components/editor-ai-panel.tsx"
+  },
+  {
+    "event": "document_renamed",
+    "description": "User renames the document title in the editor",
+    "file": "src/routes/create.tsx"
+  },
+  {
+    "event": "files_bulk_downloaded",
+    "description": "User downloads multiple selected files at once",
+    "file": "src/routes/files.tsx"
+  },
+  {
+    "event": "file_imported",
+    "description": "User imports a JSON design file into the files page",
+    "file": "src/routes/files.tsx"
+  },
+  {
+    "event": "image_exported",
+    "description": "User downloads an image export of the canvas as PNG, JPG, or WebP",
+    "file": "src/components/editor-export-menu.tsx"
+  },
+  {
+    "event": "legacy_conversion_prompt_opened",
+    "description": "A legacy-file conversion prompt is shown from the files page or editor route",
+    "file": "src/routes/files.tsx, src/routes/create.tsx"
+  },
+  {
+    "event": "legacy_conversion_started",
+    "description": "User confirms conversion of one or more legacy files",
+    "file": "src/routes/files.tsx, src/routes/create.tsx"
+  },
+  {
+    "event": "legacy_conversion_completed",
+    "description": "One or more legacy files are successfully converted to the new editor format",
+    "file": "src/routes/files.tsx, src/routes/create.tsx"
+  },
+  {
+    "event": "legacy_conversion_failed",
+    "description": "A legacy-file conversion attempt fails",
+    "file": "src/routes/files.tsx, src/routes/create.tsx"
+  },
+  {
+    "event": "legacy_conversion_cancelled",
+    "description": "User dismisses the legacy-file conversion prompt without converting",
+    "file": "src/routes/files.tsx, src/routes/create.tsx"
+  }
+]
