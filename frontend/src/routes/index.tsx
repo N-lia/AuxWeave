@@ -519,7 +519,7 @@ function Landing() {
             <h1 className="display-title hero-headline mb-8 font-medium text-balance text-[var(--text)] sm:mb-10 lg:mb-12">
               Auxweave
             </h1>
-            <p className="mb-10 max-w-xl text-lg leading-[1.6] text-[var(--text-muted)] sm:mb-12 sm:text-xl sm:leading-[1.55] lg:text-[1.375rem] lg:leading-[1.5]">
+            <p className="mb-8 max-w-xl text-base leading-relaxed text-[var(--text-muted)] sm:mb-10 sm:text-lg sm:leading-relaxed lg:text-xl">
               {heroBody}
             </p>
             <div className="flex flex-wrap items-center gap-4">
