@@ -524,24 +524,22 @@ create_flex_container({
 \`\`\`
 When creating full compositions, flyers, or stacked sections, ALWAYS PREFER \`create_flex_container\`. The deterministic layout solver handles intrinsic text measurements, line wrapping, and gaps with mathematical perfection without you having to calculate pixel arithmetic.
 
-### ⚡ ACTION-FIRST DIRECTIVE (MANDATORY)
-1. **CALL CREATION TOOLS IMMEDIATELY**: When the user asks you to design, create, layout, or add to the canvas, you MUST emit native tool calls (\`add_shape_primitive\`, \`add_text_element\`, \`add_hugeicon_symbol\`, \`place_moodboard_image\`) in your VERY FIRST RESPONSE.
-1. **CALL CREATION TOOLS IMMEDIATELY**: When the user asks you to design, create, layout, or add to the canvas, you MUST emit native tool calls (\`create_flex_container\`, \`add_shape_primitive\`, \`add_text_element\`, \`add_hugeicon_symbol\`, \`place_moodboard_image\`) in your VERY FIRST RESPONSE.
-2. **STRICT TOKEN & REASONING DISCIPLINE**:
+### ⚡ ACTION-FIRST & SEQUENTIAL EXECUTION DIRECTIVES (MANDATORY)
+1. **CALL CREATION TOOLS IMMEDIATELY**: When the user asks you to design, create, layout, or add to the canvas, emit native tool calls (`create_flex_container`, `add_shape_primitive`, `add_text_element`, `add_hugeicon_symbol`, `place_moodboard_image`) in your VERY FIRST RESPONSE.
+2. **SEQUENTIAL STEP-BY-STEP COMPOSITION**: Build complex designs in logical sequential steps so the user sees their artboard evolve live:
+   - **Step 1 — Frame & Background**: Create the canvas background shape or primary root flex container (`create_flex_container`).
+   - **Step 2 — Structural Cards & Media**: Place backdrop cards, hero frames, or moodboard imagery (`place_moodboard_image`).
+   - **Step 3 — Typographic Hierarchy**: Add the category badge, hero headline, subtitle, and body text (`add_text_element`).
+   - **Step 4 — Icons & Accents**: Add vector icons (`add_hugeicon_symbol`), divider lines, or accent shapes (`add_shape_primitive`).
+   - **Step 5 — Quality Assurance & Auto-Repair**: Run `validate_layout` to verify contrast (≥4.5:1) and boundary alignment.
+3. **GROUND NEXT STEPS IN RETURNED GEOMETRY**:
+   - Each creation tool returns the element's actual bounding box (`x, y, width, height`).
+   - Use returned boxes to position follow-up elements precisely (`relativeTo: 'previous'`, `position: 'below'`), guaranteeing zero overlaps and optical spacing.
+4. **STRICT TOKEN & REASONING DISCIPLINE**:
    - Limit internal reasoning to under 100 words.
-   - NEVER write pseudocode, drafts, or function calls in markdown/text (e.g. NEVER write \`add_shape_primitive(...)\` in prose).
-   - NEVER write pseudocode, drafts, or function calls in markdown/text (e.g. NEVER write \`create_flex_container(...)\` or \`add_shape_primitive(...)\` in prose).
-   - Tool calls MUST be invoked exclusively via the native \`tool_calls\` function-calling mechanism.
-   - Do NOT waste your completion budget writing coordinate essays. Jump directly to emitting the \`tool_calls\`.
-3. **BATCH ALL CALLS TOGETHER**: Call all necessary tools in a single turn so the entire composition renders at once:
-   - Step A: Background rectangle (width: ${artboardW}, height: ${artboardH}, x: 0, y: 0)
-   - Step B: Decorative backdrop / cards / containers
-   - Step C: Category pill badge (role: 'badge')
-   - Step D: Primary hero headline (role: 'headline')
-   - Step E: Subtitle / descriptive copy (role: 'subtitle')
-   - Step F: Metadata, session tags, footer elements (role: 'body')
-3. **BATCH OR USE FLEX CONTAINERS**: Either call \`create_flex_container\` to build the whole composition at once, or batch all individual tools together in a single turn.
-4. **NEVER FINISH WITH ONLY READ-ONLY INSPECTIONS**: Never return just \`get_canvas_scene_state\` without creating the requested design elements!
+   - NEVER write pseudocode, drafts, or function calls in markdown text.
+   - Tool calls MUST be invoked exclusively via native `tool_calls`.
+5. **NEVER FINISH WITH ONLY READ-ONLY INSPECTIONS**: Never return just `get_canvas_scene_state` without creating requested design elements!
 
 ### 📏 SPATIAL AWARENESS & PROPORTIONAL SIZING GUIDELINES:
 0. **TRUST RETURNED GEOMETRY, NEVER YOUR REQUESTS (SPATIAL GROUND TRUTH)**:
@@ -655,8 +653,6 @@ async function _callNebius(
     }
   }
 
-  // Use local Vite proxy (/agentrouter-proxy) only in local dev environment.
-  // In production (Vercel), fetch https://agentrouter.org directly.
   const isLocalDev =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -687,12 +683,7 @@ async function _callNebius(
     }
   }
 
-  // If local proxy hit an error, retry direct endpoint
-  if (
-    !res.ok &&
-    requestUrl !== endpoint &&
-    isAgentRouter
-  ) {
+  if (!res.ok && requestUrl !== endpoint && isAgentRouter) {
     try {
       const retryRes = await fetch(endpoint, {
         method: 'POST',
@@ -739,6 +730,171 @@ async function _callNebius(
   }
 
   return (await res.json()) as { choices: _NebiusChoice[] }
+}
+
+async function _callNebiusStream(
+  body: Record<string, unknown>,
+  apiKey: string,
+  callbacks: {
+    onReasoning?: (text: string) => void
+    onContent?: (text: string) => void
+  } = {},
+  signal?: AbortSignal,
+): Promise<{ choices: _NebiusChoice[] }> {
+  const rawEndpoint = getStoredEndpoint()
+  let endpoint = resolveChatCompletionsUrl(rawEndpoint)
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  }
+
+  if (endpoint.includes('openrouter.ai') || endpoint.includes('agentrouter.org')) {
+    headers['HTTP-Referer'] = 'https://auxweave.dev'
+    headers['X-Title'] = 'Auxweave Vector Studio'
+  }
+
+  const isAgentRouter =
+    endpoint.includes('agentrouter.org') || rawEndpoint.includes('agentrouter.org')
+  if (isAgentRouter) {
+    headers['User-Agent'] = 'opencode/'
+    if (typeof body.model === 'string') {
+      body.model = body.model.trim().toLowerCase()
+    }
+  }
+
+  const isLocalDev =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  let requestUrl = endpoint
+  if (isLocalDev && isAgentRouter && requestUrl.startsWith('https://agentrouter.org')) {
+    requestUrl = requestUrl.replace('https://agentrouter.org', '/agentrouter-proxy')
+  }
+
+  const payload = { ...body, stream: true }
+
+  let res: Response
+  try {
+    res = await fetch(requestUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal,
+    })
+  } catch (err) {
+    if (requestUrl !== endpoint) {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal,
+      })
+    } else {
+      throw err
+    }
+  }
+
+  if (!res.ok || !res.body) {
+    return _callNebius(body, apiKey, signal)
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+
+  let accumulatedContent = ''
+  let accumulatedReasoning = ''
+  const toolCallsMap = new Map<number, { id: string; name: string; args: string }>()
+
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith(':')) continue
+        if (trimmed === 'data: [DONE]') break
+
+        if (trimmed.startsWith('data: ')) {
+          const jsonStr = trimmed.slice(6)
+          try {
+            const parsed = JSON.parse(jsonStr) as {
+              choices?: Array<{
+                delta?: {
+                  content?: string
+                  reasoning_content?: string
+                  reasoning?: string
+                  tool_calls?: Array<{
+                    index?: number
+                    id?: string
+                    function?: { name?: string; arguments?: string }
+                  }>
+                }
+              }>
+            }
+            const delta = parsed.choices?.[0]?.delta
+            if (!delta) continue
+
+            const reasoningChunk = delta.reasoning_content || delta.reasoning
+            if (reasoningChunk) {
+              accumulatedReasoning += reasoningChunk
+              callbacks.onReasoning?.(accumulatedReasoning)
+            }
+
+            if (delta.content) {
+              accumulatedContent += delta.content
+              callbacks.onContent?.(accumulatedContent)
+            }
+
+            if (Array.isArray(delta.tool_calls)) {
+              for (const tc of delta.tool_calls) {
+                const index = tc.index ?? 0
+                const existing = toolCallsMap.get(index) ?? { id: '', name: '', args: '' }
+                if (tc.id) existing.id = tc.id
+                if (tc.function?.name) existing.name += tc.function.name
+                if (tc.function?.arguments) existing.args += tc.function.arguments
+                toolCallsMap.set(index, existing)
+              }
+            }
+          } catch {
+            /* ignore partial chunk parse errors */
+          }
+        }
+      }
+    }
+  } catch {
+    /* if stream interrupted, return whatever was accumulated so far */
+  }
+
+  const finalToolCalls = Array.from(toolCallsMap.values()).map((tc, idx) => ({
+    id: tc.id || `call_${idx}_${Date.now()}`,
+    type: 'function',
+    function: {
+      name: tc.name,
+      arguments: tc.args,
+    },
+  }))
+
+  return {
+    choices: [
+      {
+        index: 0,
+        finish_reason: 'stop',
+        message: {
+          role: 'assistant',
+          content: accumulatedContent,
+          reasoning_content: accumulatedReasoning || undefined,
+          tool_calls: finalToolCalls.length > 0 ? finalToolCalls : undefined,
+        },
+      },
+    ],
+  }
 }
 
 /**
@@ -1190,7 +1346,7 @@ export async function executeAgentTurn(
       compactHistoricalToolResults(messages, 0)
     }
 
-    const data = await _callNebius(
+    const data = await _callNebiusStream(
       {
         model,
         messages,
@@ -1200,6 +1356,14 @@ export async function executeAgentTurn(
         max_tokens: 8192,
       },
       apiKey,
+      {
+        onReasoning: text => {
+          callbacks.onReasoning?.(text)
+        },
+        onContent: text => {
+          callbacks.onAssistantMessage?.(text)
+        },
+      },
       signal,
     )
 
