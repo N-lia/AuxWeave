@@ -348,9 +348,8 @@ function Landing() {
 
   const hasSavedFiles = (savedFileCount ?? 0) > 0;
   const primaryCtaLabel = hasSavedFiles ? "Open files" : "Open editor";
-  const heroBody = hasSavedFiles
-    ? "You already have saved work in this browser. Open your files and keep designing alongside your AI agent."
-    : "A web-native creative canvas where AI agents can design alongside humans through WebMCP. Direct spatial manipulation meets autonomous multi-turn design on a live shared artboard.";
+  const heroBody =
+    "A web-native creative canvas, where AI agents design with humans.";
   const activeTool = essentialTools[activeToolIndex];
   const activeToolCount = String(activeToolIndex + 1).padStart(2, "0");
   const totalToolCount = String(essentialTools.length).padStart(2, "0");
@@ -518,9 +517,7 @@ function Landing() {
               W3C WebMCP Standard Canvas
             </div>
             <h1 className="display-title hero-headline mb-8 font-medium text-balance text-[var(--text)] sm:mb-10 lg:mb-12">
-              A web-native creative canvas,
-              <br />
-              where AI agents design with humans.
+              Auxweave
             </h1>
             <p className="mb-10 max-w-xl text-lg leading-[1.6] text-[var(--text-muted)] sm:mb-12 sm:text-xl sm:leading-[1.55] lg:text-[1.375rem] lg:leading-[1.5]">
               {heroBody}
