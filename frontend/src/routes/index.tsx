@@ -348,8 +348,6 @@ function Landing() {
 
   const hasSavedFiles = (savedFileCount ?? 0) > 0;
   const primaryCtaLabel = hasSavedFiles ? "Open files" : "Open editor";
-  const heroBody =
-    "A web-native creative canvas, where AI agents design with humans.";
   const activeTool = essentialTools[activeToolIndex];
   const activeToolCount = String(activeToolIndex + 1).padStart(2, "0");
   const totalToolCount = String(essentialTools.length).padStart(2, "0");
@@ -387,6 +385,28 @@ function Landing() {
   return (
     <main className="landing-page">
       <section className="hero-page relative flex min-h-[100dvh] flex-col justify-center overflow-hidden px-5 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
+        <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-6 sm:px-10 lg:px-16">
+          <div className="flex items-center gap-2.5">
+            <span className="display-title text-2xl font-bold tracking-tight text-[var(--text)]">Auxweave</span>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-emerald-700 uppercase">W3C WebMCP</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/sponsor"
+              className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text)] transition no-underline"
+            >
+              Sponsor
+            </Link>
+            <a
+              href="https://github.com/N-lia/AuxWeave"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-black/10 bg-white/70 px-4 py-1.5 text-xs font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:bg-white hover:border-black/20 transition"
+            >
+              GitHub ↗
+            </a>
+          </div>
+        </header>
         <div className="hero-bg-orb hero-bg-orb-a" aria-hidden="true" />
         <div className="hero-bg-orb hero-bg-orb-b" aria-hidden="true" />
         <div className="hero-grid" aria-hidden="true" />
@@ -511,21 +531,23 @@ function Landing() {
           ))}
         </div>
         <div className="relative z-[1] mx-auto w-full max-w-3xl">
-          <div className="rise-in text-left">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/[0.1] bg-white/80 px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[var(--text)] shadow-xs backdrop-blur-sm sm:text-sm">
+          <div className="rise-in text-left pt-12 sm:pt-0">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/[0.1] bg-white/85 px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[var(--text)] shadow-xs backdrop-blur-sm sm:text-sm">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               W3C WebMCP Standard Canvas
             </div>
-            <h1 className="display-title hero-headline mb-8 font-medium text-balance text-[var(--text)] sm:mb-10 lg:mb-12">
-              Auxweave
+            <h1 className="display-title hero-headline mb-6 font-medium text-balance text-[var(--text)] sm:mb-8 lg:mb-10">
+              A web-native creative canvas,
+              <br />
+              where AI agents design with humans.
             </h1>
-            <p className="mb-8 max-w-xl text-base leading-relaxed text-[var(--text-muted)] sm:mb-10 sm:text-lg sm:leading-relaxed lg:text-xl">
-              {heroBody}
+            <p className="mb-10 max-w-xl text-base leading-relaxed text-[var(--text-muted)] sm:mb-12 sm:text-lg sm:leading-relaxed lg:text-xl">
+              Direct spatial manipulation meets autonomous multi-turn vector editing on a live artboard powered by W3C WebMCP.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <button
                 type="button"
-                className="bg-black text-white inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
+                className="bg-black text-white inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium shadow-lg shadow-black/10 transition-all hover:bg-neutral-800 hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
                 onClick={openEditor}
               >
                 {primaryCtaLabel}
@@ -534,7 +556,7 @@ function Landing() {
                 href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/[0.14] bg-white/70 px-8 py-3.5 text-base font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:border-black/[0.22] hover:bg-white sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/[0.14] bg-white/85 px-8 py-3.5 text-base font-medium text-[var(--text)] no-underline backdrop-blur-sm transition-all hover:border-black/[0.25] hover:bg-white hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
               >
                 GitHub
               </a>
