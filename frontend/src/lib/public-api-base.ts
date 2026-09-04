@@ -1,7 +1,7 @@
 /**
  * Base URL for the Elysia HTTP API (no trailing slash).
  *
- * **Production (Vercel):** `experimentalServices.backend.routePrefix` is `/api`
+ * **Production (Vercel):** `services.backend` is routed to `/api`
  * (see repo root `vercel.json`). The browser calls same-origin `/api/...`; no Vite
  * proxy is involved.
  *
