@@ -3107,16 +3107,9 @@ function ImageRemovalUnavailableModal({ open, onClose }: { open: boolean; onClos
         </div>
 
         <div className="grid gap-3 px-6 py-5 sm:px-8 sm:py-6">
-          <a
-            href="/sponsor"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-neutral-950 px-5 text-base font-bold text-white no-underline transition hover:bg-neutral-800"
-          >
-            <HugeiconsIcon icon={Coffee02Icon} size={18} strokeWidth={1.9} />
-            Sponsor Auxweave
-          </a>
           <button
             type="button"
-            className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border border-black/[0.1] bg-white px-5 text-base font-bold text-neutral-900 transition hover:bg-black/[0.04]"
+            className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full bg-neutral-950 px-5 text-base font-bold text-white transition hover:bg-neutral-800"
             onClick={onClose}
           >
             Close

@@ -391,12 +391,6 @@ function Landing() {
             <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-emerald-700 uppercase">W3C WebMCP</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/sponsor"
-              className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text)] transition no-underline"
-            >
-              Sponsor
-            </Link>
             <a
               href="https://github.com/N-lia/AuxWeave"
               target="_blank"
@@ -410,18 +404,132 @@ function Landing() {
         <div className="hero-bg-orb hero-bg-orb-a" aria-hidden="true" />
         <div className="hero-bg-orb hero-bg-orb-b" aria-hidden="true" />
         <div className="hero-grid" aria-hidden="true" />
+        <div ref={stickerLayerRef} className="hero-sticker-layer" aria-hidden="true">
+          {stickers.map((sticker) => (
+            (() => {
+              const pos = compactHeroStickerLayout
+                ? sticker.mobile
+                : sticker.desktop;
+
+              return (
+                <div
+                  key={sticker.id}
+                  className={`hero-sticker-frame ${activeStickerId === sticker.id ? "is-active" : ""}`}
+                  style={{
+                    left: `${pos.x}%`,
+                    top: `${pos.y}%`,
+                    width: sticker.size,
+                    transform: `rotate(${sticker.rotation}deg)`,
+                    zIndex: activeStickerId === sticker.id ? 3 : 1,
+                  }}
+                  onPointerDown={(e) => {
+                    const layer = stickerLayerRef.current;
+                    if (!layer) {
+                      return;
+                    }
+
+                    const layerRect = layer.getBoundingClientRect();
+                    const stickerLeft =
+                      (pos.x / 100) * Math.max(layerRect.width, 1);
+                    const stickerTop =
+                      (pos.y / 100) * Math.max(layerRect.height, 1);
+
+                    dragStateRef.current = {
+                      mode: "drag",
+                      id: sticker.id,
+                      pointerId: e.pointerId,
+                      startClientX: e.clientX,
+                      startClientY: e.clientY,
+                      startLeft: stickerLeft,
+                      startTop: stickerTop,
+                      startRotation: sticker.rotation,
+                      centerX:
+                        e.currentTarget.getBoundingClientRect().left +
+                        e.currentTarget.offsetWidth / 2,
+                      centerY:
+                        e.currentTarget.getBoundingClientRect().top +
+                        e.currentTarget.offsetHeight / 2,
+                      startPointerAngle: 0,
+                      width: e.currentTarget.offsetWidth,
+                      height: e.currentTarget.offsetHeight,
+                    };
+                    setActiveStickerId(sticker.id);
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  }}
+                  onPointerMove={(e) => {
+                    updateStickerPosition(sticker.id, e.clientX, e.clientY);
+                  }}
+                  onPointerUp={(e) => {
+                    endDrag(e.pointerId, e.target);
+                  }}
+                  onPointerCancel={(e) => {
+                    endDrag(e.pointerId, e.target);
+                  }}
+                >
+                  <span className="hero-sticker-selection" />
+                  <span className="hero-sticker-handle hero-sticker-handle-nw" />
+                  <span
+                    className="hero-sticker-rotation-arm"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      const frame = e.currentTarget.parentElement;
+                      if (!frame) {
+                        return;
+                      }
+
+                      const frameRect = frame.getBoundingClientRect();
+                      const centerX = frameRect.left + frameRect.width / 2;
+                      const centerY = frameRect.top + frameRect.height / 2;
+
+                      dragStateRef.current = {
+                        mode: "rotate",
+                        id: sticker.id,
+                        pointerId: e.pointerId,
+                        startClientX: e.clientX,
+                        startClientY: e.clientY,
+                        startLeft: 0,
+                        startTop: 0,
+                        startRotation: sticker.rotation,
+                        centerX,
+                        centerY,
+                        startPointerAngle: Math.atan2(
+                          e.clientY - centerY,
+                          e.clientX - centerX,
+                        ),
+                        width: frameRect.width,
+                        height: frameRect.height,
+                      };
+                      setActiveStickerId(sticker.id);
+                      frame.setPointerCapture(e.pointerId);
+                    }}
+                  >
+                    <span className="hero-sticker-rotation-handle" />
+                  </span>
+                  <span className="hero-sticker-handle hero-sticker-handle-ne" />
+                  <span className="hero-sticker-handle hero-sticker-handle-e" />
+                  <span className="hero-sticker-handle hero-sticker-handle-se" />
+                  <span className="hero-sticker-handle hero-sticker-handle-s" />
+                  <span className="hero-sticker-handle hero-sticker-handle-sw" />
+                  <span className="hero-sticker-handle hero-sticker-handle-w" />
+                  <img
+                    src={sticker.src}
+                    alt={sticker.label}
+                    className="hero-sticker-image"
+                    loading="lazy"
+                    decoding="async"
+                    draggable={false}
+                  />
+                </div>
+              );
+            })()
+          ))}
+        </div>
         <div className="relative z-[1] mx-auto w-full max-w-3xl">
           <div className="rise-in text-left pt-12 sm:pt-0">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/[0.1] bg-white/85 px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[var(--text)] shadow-xs backdrop-blur-sm sm:text-sm">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              W3C WebMCP Standard Canvas
-            </div>
-            <h1 className="display-title hero-headline mb-6 font-medium text-balance text-[var(--text)] sm:mb-8 lg:mb-10">
-              A web-native creative canvas,
-              <br />
-              where AI agents design with humans.
+            <h1 className="mb-6 max-w-2xl text-3xl font-semibold tracking-tight text-[var(--text)] sm:text-4xl sm:leading-[1.18] lg:text-5xl lg:leading-[1.15]">
+              A web-native creative canvas where AI agents design with humans.
             </h1>
-            <p className="mb-10 max-w-xl text-base leading-relaxed text-[var(--text-muted)] sm:mb-12 sm:text-lg sm:leading-relaxed lg:text-xl">
+            <p className="mb-8 max-w-xl text-base leading-relaxed text-[var(--text-muted)] sm:text-lg">
               Direct spatial manipulation meets autonomous multi-turn vector editing on a live artboard powered by W3C WebMCP.
             </p>
             <div className="flex flex-wrap items-center gap-4">
@@ -440,15 +548,6 @@ function Landing() {
               >
                 GitHub
               </a>
-            </div>
-            <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
-              <span>Want to back the project?</span>
-              <Link
-                to="/sponsor"
-                className="inline-flex items-center rounded-full border border-black/[0.1] bg-white/70 px-4 py-2 font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:border-black/[0.18] hover:bg-white"
-              >
-                Sponsor Auxweave
-              </Link>
             </div>
           </div>
         </div>
