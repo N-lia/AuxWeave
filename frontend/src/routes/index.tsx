@@ -404,8 +404,8 @@ function Landing() {
               </div>
 
               <div className="rounded-2xl border border-black/[0.06] bg-white/90 p-6 shadow-xs transition hover:shadow-md sm:col-span-2 lg:col-span-1">
-                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 font-mono text-sm font-bold">
-                  ⚡
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 font-mono text-xs font-bold uppercase tracking-wider">
+                  LIVE
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-[var(--text)]">Real-Time Co-Design</h3>
                 <p className="text-sm leading-relaxed text-[var(--text-muted)]">
