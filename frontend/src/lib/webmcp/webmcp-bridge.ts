@@ -655,33 +655,46 @@ async function _callNebius(
     }
   }
 
-  // When running in browser and targeting agentrouter.org, route via /agentrouter-proxy
-  // so the proxy injects 'User-Agent: opencode/' (which browsers restrict setting in fetch).
-  if (
+  // Use local Vite proxy (/agentrouter-proxy) only in local dev environment.
+  // In production (Vercel), fetch https://agentrouter.org directly.
+  const isLocalDev =
     typeof window !== 'undefined' &&
-    isAgentRouter &&
-    endpoint.startsWith('https://agentrouter.org')
-  ) {
-    endpoint = endpoint.replace('https://agentrouter.org', '/agentrouter-proxy')
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  let requestUrl = endpoint
+  if (isLocalDev && isAgentRouter && requestUrl.startsWith('https://agentrouter.org')) {
+    requestUrl = requestUrl.replace('https://agentrouter.org', '/agentrouter-proxy')
   }
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    signal,
-  })
+  let res: Response
+  try {
+    res = await fetch(requestUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal,
+    })
+  } catch (err) {
+    if (requestUrl !== endpoint) {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      })
+    } else {
+      throw err
+    }
+  }
 
-  // If direct fetch hit a client/CORS/UA error on agentrouter.org, retry via proxy
+  // If local proxy hit an error, retry direct endpoint
   if (
     !res.ok &&
-    typeof window !== 'undefined' &&
-    isAgentRouter &&
-    !endpoint.includes('/agentrouter-proxy')
+    requestUrl !== endpoint &&
+    isAgentRouter
   ) {
-    const proxyUrl = endpoint.replace('https://agentrouter.org', '/agentrouter-proxy')
     try {
-      const retryRes = await fetch(proxyUrl, {
+      const retryRes = await fetch(endpoint, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
@@ -691,7 +704,7 @@ async function _callNebius(
         return (await retryRes.json()) as { choices: _NebiusChoice[] }
       }
     } catch {
-      /* ignore retry failure and throw primary error */
+      /* ignore retry failure */
     }
   }
 
@@ -741,8 +754,13 @@ export async function fetchAgentRouterModels(apiKey: string): Promise<NebiusMode
     ? resolveChatCompletionsUrl(rawEndpoint).replace('/chat/completions', '/models')
     : 'https://agentrouter.org/v1/models'
 
-  if (typeof window !== 'undefined' && endpoint.startsWith('https://agentrouter.org')) {
-    endpoint = endpoint.replace('https://agentrouter.org', '/agentrouter-proxy')
+  const isLocalDev =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  let requestUrl = endpoint
+  if (isLocalDev && requestUrl.startsWith('https://agentrouter.org')) {
+    requestUrl = requestUrl.replace('https://agentrouter.org', '/agentrouter-proxy')
   }
 
   const headers: Record<string, string> = {
@@ -752,7 +770,10 @@ export async function fetchAgentRouterModels(apiKey: string): Promise<NebiusMode
   }
 
   try {
-    const res = await fetch(endpoint, { method: 'GET', headers })
+    let res = await fetch(requestUrl, { method: 'GET', headers })
+    if (!res.ok && requestUrl !== endpoint) {
+      res = await fetch(endpoint, { method: 'GET', headers })
+    }
     if (!res.ok) return []
     const json = (await res.json()) as { data?: Array<{ id: string; name?: string }> }
     if (Array.isArray(json.data) && json.data.length > 0) {

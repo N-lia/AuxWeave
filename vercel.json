@@ -11,6 +11,10 @@
   },
   "rewrites": [
     {
+      "source": "/agentrouter-proxy/(.*)",
+      "destination": "https://agentrouter.org/$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": {
         "service": "backend"
