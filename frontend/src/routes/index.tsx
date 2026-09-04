@@ -199,17 +199,6 @@ function Landing() {
         <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-6 sm:px-10 lg:px-16">
           <div className="flex items-center gap-2.5">
             <span className="display-title text-2xl font-bold tracking-tight text-[var(--text)]">Auxweave</span>
-            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-emerald-700 uppercase">W3C WebMCP</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/N-lia/AuxWeave"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-black/10 bg-white/70 px-4 py-1.5 text-xs font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:bg-white hover:border-black/20 transition"
-            >
-              GitHub ↗
-            </a>
           </div>
         </header>
         <div className="hero-bg-orb hero-bg-orb-a" aria-hidden="true" />
