@@ -1,54 +1,72 @@
 # Auxweave
 
-Auxweave is a browser-first design editor for posters, layouts, social graphics, and other canvas-based compositions.
+> **Agent-Native Collaborative Design Canvas powered by the W3C WebMCP Standard**
 
-## Current Product State
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![W3C WebMCP](https://img.shields.io/badge/Standard-W3C_WebMCP-6366f1.svg)](https://github.com/N-lia/AuxWeave)
+[![Built with TypeScript](https://img.shields.io/badge/Built_with-TypeScript-3178c6.svg)](https://www.typescriptlang.org/)
+[![React + Vite](https://img.shields.io/badge/Frontend-React_%2B_Vite-61dafb.svg)](https://vitejs.dev/)
 
-Auxweave today is strongest around:
+Auxweave is a browser-first vector design studio where **humans and AI agents co-create on the exact same live canvas in real-time**. Built on the emerging **W3C WebMCP (Web Model Context Protocol)** specification, Auxweave bridges the gap between direct spatial manipulation and autonomous AI design assistance.
 
-- Fast browser-local editing
-- A custom scene editor with direct manipulation controls
-- Files saved in IndexedDB with a dedicated `/files` view
-- JSON import/export
-- Legacy file migration into the current editor format
-- Image export as `PNG`, `JPG`, and `WebP`
-- Prompt-driven editing through the Magic panel
+---
 
-Things that are true right now:
+## 💡 The Problem: Why Generative AI Design is Broken
 
-- The main editing experience lives in the frontend
-- The app is desktop-first; mobile editing is intentionally blocked
-- File persistence is primarily browser-local today
-- The backend exists, but it is optional for many day-to-day editor tasks
+1. **The "Flat Bitmap" Dead-End**: Traditional text-to-image models (Midjourney, DALL-E) produce static PNG/JPEG files. Once generated, text cannot be edited, layers cannot be moved, and design elements cannot be resized or exported as vector code.
+2. **The "Coordinate Hallucination" Trap**: When LLMs try to place elements on coordinate-based design canvases, they are forced to do 2D bounding-box math in 1D text tokens. This causes endless calculation monologues, overlapping text blocks, and chopped-off canvas elements.
+3. **The Disconnected Chatbot**: AI design tools usually isolate the assistant in a side-chat that cannot perceive the user’s selection, active artboard dimensions, or visual moodboards.
 
-## Editor Capabilities
+---
 
-The current editor supports:
+## ⚡ The WebMCP Solution
 
-- Custom-size or preset canvases
-- Text, rectangles, ellipses, polygons, stars, lines, arrows, images, and vector boards
-- Selection, multi-select, marquee select, group/ungroup, reorder, and alignment
-- Resize, rotate, crop, corner radius, blur, opacity, shadows, and background editing
-- Snapping and transform overlays
-- Nested vector-board drawing areas
-- QR code generation
-- JSON file import from the files page
-- Legacy-file conversion prompts before opening older documents
+Auxweave exposes the internal vector canvas directly to AI models using **`document.modelContext.registerTool()`**. 
 
-## 🤖 WebMCP (Web Model Context Protocol) Integration
+Instead of guessing coordinates or blindly clicking pixels, an agent inspects the active artboard and invokes high-level **Web-Native Layout Primitives** (Flexbox / Auto Layout) to construct production-ready posters, flyers, banners, and typography hierarchy.
 
-Auxweave natively implements the **W3C WebMCP specification**, exposing browser-level tools to local and remote AI agents through `document.modelContext.registerTool()`.
+### The Co-Creation Loop
+```
+   ┌────────────────────────────────────────────────────────┐
+   │                    Auxweave Canvas                     │
+   │   (Shared Live Scene Graph: Text, Shapes, Containers)  │
+   └───────────────┬────────────────────────▲───────────────┘
+                   │                        │
+       Live Visual Perception     Real-Time Tool Execution
+                   │                        │
+   ┌───────────────▼────────────────────────┴───────────────┐
+   │         W3C WebMCP Standard (document.modelContext)     │
+   │  create_flex_container | validate_layout | align_objects│
+   └───────────────▲────────────────────────▲───────────────┘
+                   │                        │
+           Local User Edits         AI Co-Designer
+       (Mouse, Keyboard, Touch)  (In-App or Chrome DevTools)
+```
 
-### Why WebMCP Fits Auxweave
-Design canvases are visually rich, interactive, and spatial. Traditional LLMs struggle with canvas manipulation because they cannot see element bounding boxes or perform complex 2D arithmetic in pure text. WebMCP enables:
-- **Bi-Directional Co-Creation**: The user and the AI agent work together on the exact same live canvas. When the user selects or moves an element, the agent perceives it; when the agent creates or aligns objects, the changes render in real-time.
-- **Web-Native Layout Primitives**: Agents invoke `create_flex_container` (Flexbox / Auto Layout) to generate posters, cards, and flyers with deterministic spacing, intrinsic text sizing, and zero overlap.
-- **Automated Layout Quality Assurance**: The agent validates contrast, optical balance, safe bounds, and color palettes via `validate_layout` and `repair_layout`.
+---
 
-### Tool Registration Pattern
-All tools are registered directly with the browser's model context using the official WebMCP schema:
+## 🌟 Key Capabilities
+
+### 1. Web-Native Layout Primitives (`create_flex_container`)
+Inspired by the **Paper.design** and **Figma Auto Layout** paradigms, agents do not manually compute Cartesian $x, y$ coordinates. They declare semantic component trees (`direction: 'column' | 'row'`, `gap`, `padding`, `justify`, `align`). Auxweave's deterministic layout solver calculates optical bounds, line wrapping, and spacing with sub-pixel perfection.
+
+### 2. Bi-Directional Collaboration
+Every object generated by the agent is a standard, editable `SceneObject`. When the agent creates a poster, the human designer can immediately click any headline to edit the copy, re-color a card with the color picker, or drag elements around. If the human selects an object, the agent perceives the selection through `get_selected_elements`.
+
+### 3. Automated Layout Quality Assurance (`validate_layout` & `repair_layout`)
+Auxweave includes an automated design auditor. Agents can check the canvas against typography balance rules, optical safety margins (4% frame), overlap detection, and WCAG color contrast guidelines (≥ 4.5:1), with one-click automated repair.
+
+### 4. Grounded in Visual Moodboards
+Users can pin inspiration photos and color palettes in the editor. Agents invoke `get_moodboard_content` and `place_moodboard_image` to sample dominant hex colors and place reference imagery into the layout.
+
+---
+
+## 🛠️ WebMCP Implementation
+
+Auxweave registers modular tools directly onto the browser's model context conforming to the official WebMCP specification:
 
 ```javascript
+// Standard W3C WebMCP Registration in Auxweave
 document.modelContext.registerTool({
   name: "create_flex_container",
   description: "Creates a modern web-native flex layout container with automatic child positioning",
@@ -56,192 +74,109 @@ document.modelContext.registerTool({
     type: "object",
     properties: {
       direction: { type: "string", enum: ["column", "row"] },
-      gap: { type: "number" },
-      padding: { type: "number" },
-      children: { type: "array" }
+      justify: { type: "string", enum: ["start", "center", "end", "space-between"] },
+      align: { type: "string", enum: ["start", "center", "end", "stretch"] },
+      gap: { type: "number", description: "Pixel spacing between children" },
+      padding: { type: "number", description: "Inner padding in pixels" },
+      fillColor: { type: "string", description: "Card background color" },
+      children: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            type: { type: "string", enum: ["headline", "subtitle", "body", "badge", "icon", "shape", "container"] },
+            text: { type: "string" },
+            fillColor: { type: "string" }
+          },
+          required: ["type"]
+        }
+      }
     },
     required: ["children"]
   },
   execute: async (input) => {
-    // Canvas bridge execution
-    return { success: true, containerId: "..." }
+    // Computes layout & renders into Auxweave scene graph
+    return { success: true, containerId: "group-10492", childCount: 4 };
   }
 });
 ```
 
-### WebMCP Tools Provided:
-- **Layout & Composition**: `create_flex_container`, `wrap_in_flex_container`, `apply_poster_template`
-- **Primitives**: `add_shape_primitive`, `add_text_element`, `add_hugeicon_symbol`, `add_image_element`
-- **Transforms & Alignment**: `update_transform`, `align_objects`
-- **Design Intelligence**: `apply_color_palette`, `validate_layout`, `repair_layout`
-- **Scene Inspection**: `get_canvas_scene_state`, `get_document_metadata`, `get_selected_elements`
-- **Moodboard Integration**: `get_moodboard_content`, `place_moodboard_image`
+### Complete WebMCP Tool Catalog
 
-### Connecting External Agents / Chrome Extensions
-Auxweave automatically dispatches `toolchange` events. External Chrome extensions (like the official Chrome DevTools WebMCP extension) can discover and invoke the tools directly on `document.modelContext`. Auxweave also includes a built-in **AI Co-Designer panel** supporting AgentRouter, OpenRouter, Google Gemini, and Nebius API endpoints.
+| Tool Name | Category | Description |
+| :--- | :--- | :--- |
+| `create_flex_container` | **Layout** | Generates full layouts, sections, and cards using Flexbox primitives (`VStack`, `HStack`, `gap`, `padding`). |
+| `wrap_in_flex_container` | **Layout** | Groups loose canvas items into an aligned flex layout with consistent gutters. |
+| `apply_poster_template` | **Layout** | Instantiates balanced poster scaffolding based on curated typographic pairings. |
+| `add_text_element` | **Primitives** | Creates rich typography with automatic role-based proportional sizing. |
+| `add_shape_primitive` | **Primitives** | Adds vector shapes (rectangle, circle, polygon, star, line, arrow). |
+| `add_hugeicon_symbol` | **Primitives** | Inserts vector icons from Hugeicons with keyword search. |
+| `add_image_element` | **Primitives** | Places images onto the canvas with top-left or centered anchor bounds. |
+| `update_transform` | **Transform** | Mutates position, dimension, or rotation of selected elements. |
+| `align_objects` | **Transform** | Performs optical alignment (left, center, right, top, middle, bottom, distribute). |
+| `validate_layout` | **Design QA** | Scans canvas for overlaps, contrast issues, and boundary bleed. |
+| `repair_layout` | **Design QA** | Automatically resolves layout collisions and fixes unreadable font sizes. |
+| `apply_color_palette` | **Styling** | Applies harmonious color palettes to canvas backgrounds and foreground items. |
+| `get_canvas_scene_state`| **Inspection** | Returns live artboard dimensions and bounding boxes for all active objects. |
+| `get_document_metadata` | **Inspection** | Retrieves active document dimensions, active page, and background style. |
+| `get_selected_elements` | **Inspection** | Inspects currently selected elements on the canvas. |
+| `get_moodboard_content` | **Moodboard** | Fetches user-curated visual inspiration images and hex palettes. |
+| `place_moodboard_image` | **Moodboard** | Drops a moodboard reference image onto the canvas. |
 
-## Architecture Overview
+---
 
-### Frontend
+## 🚀 Quickstart & Local Setup
 
-The frontend is a React + Vite + TypeScript application with TanStack Router and Tailwind CSS.
+### Prerequisites
+- Node.js 18+ and npm
 
-Key architectural points:
-
-- The editor no longer depends on an external canvas editing runtime for scene manipulation
-- Scene data is modeled in `frontend/src/lib/Auxweave-scene.ts`
-- Rendering/export logic lives in `frontend/src/lib/Auxweave-scene-render.ts`
-- Low-level geometry, snapping, object transforms, file placement, and related logic live under `frontend/src/scene-engine/primitives`
-- The scene editor UI has been split into smaller modules under `frontend/src/components/scene-editor`
-- Shared editor state now uses a small Zustand-backed store in `frontend/src/components/scene-editor/editor-store.tsx`
-
-Important frontend routes:
-
-- `/` landing page
-- `/files` local files manager
-- `/create` editor
-
-### Backend
-
-The backend is an Elysia + TypeScript service. It is not required for all local editing workflows, but it is useful for:
-
-- media proxying for export-safe remote images
-- Unsplash search/download flows
-- document and auth-related server routes that exist in the repo
-
-Current backend route areas:
-
-- `backend/src/routes/media.ts`
-- `backend/src/routes/unsplash.ts`
-- `backend/src/routes/documents.ts`
-
-## Repository Layout
-
-```text
-frontend/
-  src/
-    routes/                   App routes like landing, files, and editor
-    components/scene-editor/  Main editor UI modules, panels, overlays, hooks, store
-    scene-engine/primitives/  Geometry, transforms, snapping, object/file helpers
-    lib/                      Scene model, render/export, storage, previews, utilities
-    __tests__/                Frontend unit/regression tests
-
-backend/
-  src/
-    routes/                   Media, Unsplash, and document endpoints
-    plugins/                  Backend plugins such as auth wiring
-    db/                       Database setup and schema
-```
-
-## Persistence and File Handling
-
-Auxweave is currently local-first.
-
-- Documents autosave in the browser
-- The files page reads from IndexedDB
-- The editor opens documents by id via `/create?id=...`
-- JSON import/export is supported from the files workflow
-- Older saved files are detected and can be migrated from the UI before editing
-
-Legacy migration behavior currently includes:
-
-- a migrate-all prompt on the files page when old files are present
-- a conversion modal when a user clicks an old file
-- a blocking conversion overlay if a user opens or refreshes an old editor URL directly
-
-## Analytics
-
-Frontend analytics use PostHog.
-
-- Root provider setup lives in `frontend/src/routes/__root.tsx`
-- The tracked event catalog is documented in `frontend/.posthog-events.json`
-
-## Local Development
-
-### Frontend
-
+### 1. Clone & Install
 ```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Runs on `http://localhost:3300`.
-
-Optional Hugeicons Pro setup:
-
-- The frontend works without a Hugeicons Pro license. By default, contributors will install only the free icon packages and the app will fall back to free sidebar icons.
-- If you have a Hugeicons Pro license, set `HUGEICONS_NPM_TOKEN` before running `npm install` in `frontend/`. The optional package will install and Vite will automatically switch the sidebar to the pro icon set.
-- Do not expose this token with a `VITE_` prefix. It is only needed at install/build time.
-- In production or CI, builds can still succeed without the token. They will simply use the free fallback icons instead of the pro ones.
-
-Example local setup for licensed installs:
-
-```bash
-cd frontend
-export HUGEICONS_NPM_TOKEN=your_token_here
+git clone https://github.com/N-lia/AuxWeave.git
+cd AuxWeave/frontend
 npm install
 ```
 
-Useful frontend scripts:
-
+### 2. Start the Development Server
 ```bash
-cd frontend
 npm run dev
+```
+Open **`http://localhost:3300`** in your browser. Click **New Canvas** or open an existing design from `/files`.
+
+### 3. Build for Production
+```bash
 npm run build
-npm run preview
-npm test
 ```
 
-### Backend
+---
 
-```bash
-cd backend
-npm install
-cp .env.example .env
-npm run dev
-```
+## 🧪 Testing WebMCP
 
-Runs on `http://localhost:3001`.
+### Method 1: Chrome DevTools WebMCP Panel (Official)
+1. Open Google Chrome with the [WebMCP Extension](https://github.com/GoogleChromeLabs/web-model-context-protocol) or run with `chrome://flags/#enable-webmcp-testing`.
+2. Open Auxweave (`http://localhost:3300/create`).
+3. Press `F12` and navigate to the **WebMCP** panel in DevTools.
+4. All 17 Auxweave tools will be listed live under `document.modelContext`.
+5. Execute any tool (e.g. `create_flex_container`) and watch the canvas update in real-time.
 
-Useful backend scripts:
+### Method 2: Embedded AI Co-Designer Panel
+1. Inside the Auxweave editor, click the **Magic / Agent** icon in the right toolbar.
+2. Select your provider (**AgentRouter**, **Google Gemini**, **OpenRouter**, or **Nebius**) and enter an API key.
+3. Type: `"Create a modern dark event flyer for AUXWEAVE 2026 with a red accent"`.
+4. The agent executes `create_flex_container` in a single turn, rendering the composition directly on your artboard.
 
-```bash
-cd backend
-npm run dev
-npm run check
-```
+---
 
-## Backend Notes
+## 🏗️ Architecture
 
-The backend matters most when you are working on remote media, Unsplash flows, or server-backed document/auth behavior.
+- **Frontend**: React 19, TypeScript, Vite, TanStack Router, Tailwind CSS, Lucide / Hugeicons.
+- **Scene Engine**: Custom local-first vector scene graph (`SceneObject`, `SceneGroup`) backed by a lightweight Zustand store.
+- **Flex Solver**: Custom zero-dependency 1D/2D constraint solver in `flex-layout-solver.ts`.
+- **Protocol Bridge**: Standards-compliant WebMCP bridge (`webmcp-bridge.ts`, `webmcp-registry.ts`, `webmcp-editor-bridge.ts`) dispatching native `toolchange` events.
+- **Storage**: Browser-local IndexedDB persistence with JSON import/export and multi-page support.
 
-In local development, the frontend can still be the primary focus if you are working on:
+---
 
-- scene editing
-- selection and transform behavior
-- local files
-- legacy migration UX
-- export behavior
+## 📄 License
 
-## Testing
-
-Frontend regression tests live in `frontend/src/__tests__`.
-
-Right now they cover core areas such as:
-
-- scene parsing and migration detection
-- snapping behavior
-- image/object resize behavior
-- vector-board render behavior
-- file placement helpers
-
-## Practical Notes
-
-- If you change media proxy behavior, restart the backend before testing export flows that depend on remote images
-- If you are debugging editor behavior, the frontend is the main source of truth
-- If you are debugging old-file compatibility, start with `frontend/src/lib/Auxweave-scene.ts` and the files/create routes
-
-## License
-
-This project is licensed under the GNU Affero General Public License v3.0 only. See [LICENSE](LICENSE).
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-only)**. See [LICENSE](LICENSE) for details.
