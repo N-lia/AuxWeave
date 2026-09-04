@@ -16,7 +16,7 @@ import {
   useTransform,
 } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useMemo, useRef, useState } from 'react'
 import doodleSvgRaw from '../assets/doodle.svg?raw'
 import NewCanvasDialog from '../components/new-canvas-dialog'
 import { idbListDocuments } from '../lib/auxweave-editor-idb'
@@ -72,7 +72,6 @@ const essentialTools: EssentialTool[] = [
 function Landing() {
   const navigate = Route.useNavigate()
   const [newCanvasOpen, setNewCanvasOpen] = useState(false)
-  const [savedFileCount, setSavedFileCount] = useState<number | null>(null)
   const [activeToolIndex, setActiveToolIndex] = useState(0)
   const posthog = usePostHog()
   const toolsSectionRef = useRef<HTMLDivElement | null>(null)
@@ -97,20 +96,6 @@ function Landing() {
     ['0%', `-${((essentialTools.length - 1) * 100) / essentialTools.length}%`],
   )
 
-  useEffect(() => {
-    let cancelled = false
-    void idbListDocuments()
-      .then(docs => {
-        if (!cancelled) setSavedFileCount(docs.length)
-      })
-      .catch(() => {
-        if (!cancelled) setSavedFileCount(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   useMotionValueEvent(smoothToolsProgress, 'change', latest => {
     const nextIndex = Math.min(
       essentialTools.length - 1,
@@ -128,7 +113,6 @@ function Landing() {
     void (async () => {
       try {
         const docs = await idbListDocuments()
-        setSavedFileCount(docs.length)
         const destination = docs.length > 0 ? '/files' : '/create'
         posthog.capture('editor_opened', {
           source: 'landing_hero',
@@ -146,8 +130,6 @@ function Landing() {
     })()
   }, [navigate, posthog])
 
-  const hasSavedFiles = (savedFileCount ?? 0) > 0
-  const primaryCtaLabel = hasSavedFiles ? 'Open files' : 'Open editor'
   const activeTool = essentialTools[activeToolIndex]
   const activeToolCount = String(activeToolIndex + 1).padStart(2, '0')
   const totalToolCount = String(essentialTools.length).padStart(2, '0')
@@ -186,14 +168,6 @@ function Landing() {
               Auxweave
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="/create"
-              className="inline-flex items-center justify-center rounded-full bg-black px-5 py-2 text-sm font-medium text-white no-underline transition-all hover:bg-neutral-800"
-            >
-              Launch Live Canvas
-            </a>
-          </div>
         </header>
         <div className="hero-bg-orb hero-bg-orb-a" aria-hidden="true" />
         <div className="hero-bg-orb hero-bg-orb-b" aria-hidden="true" />
@@ -211,15 +185,8 @@ function Landing() {
                 href="/create"
                 className="bg-black text-white inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium no-underline shadow-lg shadow-black/10 transition-all hover:bg-neutral-800 hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
               >
-                Launch Live Canvas
+                Create
               </a>
-              <button
-                type="button"
-                className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border border-black/[0.14] bg-white/85 px-8 py-3.5 text-base font-medium text-[var(--text)] backdrop-blur-sm transition-all hover:border-black/[0.25] hover:bg-white hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
-                onClick={openEditor}
-              >
-                {primaryCtaLabel}
-              </button>
               <a
                 href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
