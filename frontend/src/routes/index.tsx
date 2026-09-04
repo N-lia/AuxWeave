@@ -6,7 +6,7 @@ import {
   TextBoldIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   motion,
   useInView,
@@ -29,79 +29,6 @@ import NewCanvasDialog from "../components/new-canvas-dialog";
 import { idbListDocuments } from "../lib/auxweave-editor-idb";
 
 export const Route = createFileRoute("/")({ component: Landing });
-
-type Sticker = {
-  id: string;
-  src: string;
-  label: string;
-  rotation: number;
-  size: string;
-  desktop: {
-    x: number;
-    y: number;
-  };
-  mobile: {
-    x: number;
-    y: number;
-  };
-};
-
-const initialStickers: Sticker[] = [
-  {
-    id: "sunflower",
-    src: "/stickers/sunflower-badge.webp",
-    label: "Sunflower sticker",
-    rotation: 6,
-    size: "clamp(5.6rem, 10.8vw, 8.8rem)",
-    desktop: { x: 74, y: 12 },
-    mobile: { x: 37, y: 15 },
-  },
-  {
-    id: "star",
-    src: "/stickers/shooting-star-badge.webp",
-    label: "Shooting star sticker",
-    rotation: -7,
-    size: "clamp(4.4rem, 8.8vw, 7.4rem)",
-    desktop: { x: 9, y: 12 },
-    mobile: { x: 7, y: 16 },
-  },
-  {
-    id: "pineapple",
-    src: "/stickers/pineapple.webp",
-    label: "Pineapple sticker",
-    rotation: 7,
-    size: "clamp(5.4rem, 11.2vw, 9.1rem)",
-    desktop: { x: 77, y: 70 },
-    mobile: { x: 68, y: 74 },
-  },
-  {
-    id: "donut",
-    src: "/stickers/donut.webp",
-    label: "Donut sticker",
-    rotation: -8,
-    size: "clamp(4.9rem, 9.6vw, 8rem)",
-    desktop: { x: 16, y: 73 },
-    mobile: { x: 8, y: 76 },
-  },
-  {
-    id: "lollipop",
-    src: "/stickers/lollipop.webp",
-    label: "Lollipop sticker",
-    rotation: 12,
-    size: "clamp(4.1rem, 8vw, 6.5rem)",
-    desktop: { x: 80, y: 45 },
-    mobile: { x: 72, y: 15 },
-  },
-  {
-    id: "leaf",
-    src: "/stickers/leaf.webp",
-    label: "Leaf sticker",
-    rotation: -11,
-    size: "clamp(4rem, 7.8vw, 6.2rem)",
-    desktop: { x: 11, y: 47 },
-    mobile: { x: 40, y: 77 },
-  },
-];
 
 type EssentialTool = {
   name: string;
@@ -150,62 +77,15 @@ const essentialTools: EssentialTool[] = [
 ];
 
 
-type DragState = {
-  mode: "drag" | "rotate";
-  id: string;
-  pointerId: number;
-  startClientX: number;
-  startClientY: number;
-  startLeft: number;
-  startTop: number;
-  startRotation: number;
-  centerX: number;
-  centerY: number;
-  startPointerAngle: number;
-  width: number;
-  height: number;
-};
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function radiansToDegrees(value: number) {
-  return (value * 180) / Math.PI;
-}
-
-function useCompactHeroStickerLayout() {
-  const [compact, setCompact] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(max-width: 640px)").matches
-      : false,
-  );
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 640px)");
-    const update = () => setCompact(media.matches);
-    update();
-    media.addEventListener?.("change", update);
-    return () => media.removeEventListener?.("change", update);
-  }, []);
-
-  return compact;
-}
-
 function Landing() {
   const navigate = Route.useNavigate();
   const [newCanvasOpen, setNewCanvasOpen] = useState(false);
   const [savedFileCount, setSavedFileCount] = useState<number | null>(null);
-  const [stickers, setStickers] = useState(initialStickers);
-  const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
   const [activeToolIndex, setActiveToolIndex] = useState(0);
   const posthog = usePostHog();
-  const stickerLayerRef = useRef<HTMLDivElement | null>(null);
   const toolsSectionRef = useRef<HTMLDivElement | null>(null);
   const vectorsSectionRef = useRef<HTMLElement | null>(null);
-  const dragStateRef = useRef<DragState | null>(null);
   const activeToolIndexRef = useRef(0);
-  const compactHeroStickerLayout = useCompactHeroStickerLayout();
   const vectorsInView = useInView(vectorsSectionRef, {
     once: true,
     amount: 0.35,
@@ -254,75 +134,6 @@ function Landing() {
     activeToolIndexRef.current = nextIndex;
     setActiveToolIndex(nextIndex);
   });
-
-  const updateStickerPosition = useCallback((
-    stickerId: string,
-    clientX: number,
-    clientY: number,
-  ) => {
-    const layer = stickerLayerRef.current;
-    const dragState = dragStateRef.current;
-    if (!layer || !dragState || dragState.id !== stickerId) {
-      return;
-    }
-
-    if (dragState.mode === "rotate") {
-      const pointerAngle = Math.atan2(
-        clientY - dragState.centerY,
-        clientX - dragState.centerX,
-      );
-      const rotation =
-        dragState.startRotation +
-        radiansToDegrees(pointerAngle - dragState.startPointerAngle);
-
-      setStickers((current) =>
-        current.map((sticker) =>
-          sticker.id === stickerId ? { ...sticker, rotation } : sticker,
-        ),
-      );
-      return;
-    }
-
-    const layerRect = layer.getBoundingClientRect();
-    const positionKey = compactHeroStickerLayout ? "mobile" : "desktop";
-    const nextLeft = clamp(
-      dragState.startLeft + (clientX - dragState.startClientX),
-      0,
-      Math.max(layerRect.width - dragState.width, 0),
-    );
-    const nextTop = clamp(
-      dragState.startTop + (clientY - dragState.startClientY),
-      0,
-      Math.max(layerRect.height - dragState.height, 0),
-    );
-
-    setStickers((current) =>
-      current.map((sticker) =>
-        sticker.id === stickerId
-          ? {
-              ...sticker,
-              [positionKey]: {
-                x: (nextLeft / Math.max(layerRect.width, 1)) * 100,
-                y: (nextTop / Math.max(layerRect.height, 1)) * 100,
-              },
-            }
-          : sticker,
-      ),
-    );
-  }, [compactHeroStickerLayout]);
-
-  const endDrag = (pointerId: number, target: EventTarget | null) => {
-    if (dragStateRef.current?.pointerId !== pointerId) {
-      return;
-    }
-
-    if (target instanceof HTMLElement && target.hasPointerCapture(pointerId)) {
-      target.releasePointerCapture(pointerId);
-    }
-
-    dragStateRef.current = null;
-    setActiveStickerId(null);
-  };
 
   const openEditor = useCallback(() => {
     void (async () => {
@@ -404,126 +215,6 @@ function Landing() {
         <div className="hero-bg-orb hero-bg-orb-a" aria-hidden="true" />
         <div className="hero-bg-orb hero-bg-orb-b" aria-hidden="true" />
         <div className="hero-grid" aria-hidden="true" />
-        <div ref={stickerLayerRef} className="hero-sticker-layer" aria-hidden="true">
-          {stickers.map((sticker) => (
-            (() => {
-              const pos = compactHeroStickerLayout
-                ? sticker.mobile
-                : sticker.desktop;
-
-              return (
-                <div
-                  key={sticker.id}
-                  className={`hero-sticker-frame ${activeStickerId === sticker.id ? "is-active" : ""}`}
-                  style={{
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    width: sticker.size,
-                    transform: `rotate(${sticker.rotation}deg)`,
-                    zIndex: activeStickerId === sticker.id ? 3 : 1,
-                  }}
-                  onPointerDown={(e) => {
-                    const layer = stickerLayerRef.current;
-                    if (!layer) {
-                      return;
-                    }
-
-                    const layerRect = layer.getBoundingClientRect();
-                    const stickerLeft =
-                      (pos.x / 100) * Math.max(layerRect.width, 1);
-                    const stickerTop =
-                      (pos.y / 100) * Math.max(layerRect.height, 1);
-
-                    dragStateRef.current = {
-                      mode: "drag",
-                      id: sticker.id,
-                      pointerId: e.pointerId,
-                      startClientX: e.clientX,
-                      startClientY: e.clientY,
-                      startLeft: stickerLeft,
-                      startTop: stickerTop,
-                      startRotation: sticker.rotation,
-                      centerX:
-                        e.currentTarget.getBoundingClientRect().left +
-                        e.currentTarget.offsetWidth / 2,
-                      centerY:
-                        e.currentTarget.getBoundingClientRect().top +
-                        e.currentTarget.offsetHeight / 2,
-                      startPointerAngle: 0,
-                      width: e.currentTarget.offsetWidth,
-                      height: e.currentTarget.offsetHeight,
-                    };
-                    setActiveStickerId(sticker.id);
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                  }}
-                  onPointerMove={(e) => {
-                    updateStickerPosition(sticker.id, e.clientX, e.clientY);
-                  }}
-                  onPointerUp={(e) => {
-                    endDrag(e.pointerId, e.target);
-                  }}
-                  onPointerCancel={(e) => {
-                    endDrag(e.pointerId, e.target);
-                  }}
-                >
-                  <span className="hero-sticker-selection" />
-                  <span className="hero-sticker-handle hero-sticker-handle-nw" />
-                  <span
-                    className="hero-sticker-rotation-arm"
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      const frame = e.currentTarget.parentElement;
-                      if (!frame) {
-                        return;
-                      }
-
-                      const frameRect = frame.getBoundingClientRect();
-                      const centerX = frameRect.left + frameRect.width / 2;
-                      const centerY = frameRect.top + frameRect.height / 2;
-
-                      dragStateRef.current = {
-                        mode: "rotate",
-                        id: sticker.id,
-                        pointerId: e.pointerId,
-                        startClientX: e.clientX,
-                        startClientY: e.clientY,
-                        startLeft: 0,
-                        startTop: 0,
-                        startRotation: sticker.rotation,
-                        centerX,
-                        centerY,
-                        startPointerAngle: Math.atan2(
-                          e.clientY - centerY,
-                          e.clientX - centerX,
-                        ),
-                        width: frameRect.width,
-                        height: frameRect.height,
-                      };
-                      setActiveStickerId(sticker.id);
-                      frame.setPointerCapture(e.pointerId);
-                    }}
-                  >
-                    <span className="hero-sticker-rotation-handle" />
-                  </span>
-                  <span className="hero-sticker-handle hero-sticker-handle-ne" />
-                  <span className="hero-sticker-handle hero-sticker-handle-e" />
-                  <span className="hero-sticker-handle hero-sticker-handle-se" />
-                  <span className="hero-sticker-handle hero-sticker-handle-s" />
-                  <span className="hero-sticker-handle hero-sticker-handle-sw" />
-                  <span className="hero-sticker-handle hero-sticker-handle-w" />
-                  <img
-                    src={sticker.src}
-                    alt={sticker.label}
-                    className="hero-sticker-image"
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                  />
-                </div>
-              );
-            })()
-          ))}
-        </div>
         <div className="relative z-[1] mx-auto w-full max-w-3xl">
           <div className="rise-in text-left pt-12 sm:pt-0">
             <h1 className="mb-6 max-w-2xl text-3xl font-semibold tracking-tight text-[var(--text)] sm:text-4xl sm:leading-[1.18] lg:text-5xl lg:leading-[1.15]">
