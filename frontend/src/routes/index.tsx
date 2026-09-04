@@ -15,11 +15,8 @@ import {
   useSpring,
   useTransform,
 } from 'motion/react'
-import { usePostHog } from 'posthog-js/react'
-import { type CSSProperties, useCallback, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useMemo, useRef, useState } from 'react'
 import doodleSvgRaw from '../assets/doodle.svg?raw'
-import NewCanvasDialog from '../components/new-canvas-dialog'
-import { idbListDocuments } from '../lib/auxweave-editor-idb'
 
 export const Route = createFileRoute('/')({ component: Landing })
 
@@ -70,10 +67,7 @@ const essentialTools: EssentialTool[] = [
 ]
 
 function Landing() {
-  const navigate = Route.useNavigate()
-  const [newCanvasOpen, setNewCanvasOpen] = useState(false)
   const [activeToolIndex, setActiveToolIndex] = useState(0)
-  const posthog = usePostHog()
   const toolsSectionRef = useRef<HTMLDivElement | null>(null)
   const vectorsSectionRef = useRef<HTMLElement | null>(null)
   const activeToolIndexRef = useRef(0)
@@ -108,27 +102,6 @@ function Landing() {
     activeToolIndexRef.current = nextIndex
     setActiveToolIndex(nextIndex)
   })
-
-  const openEditor = useCallback(() => {
-    void (async () => {
-      try {
-        const docs = await idbListDocuments()
-        const destination = docs.length > 0 ? '/files' : '/create'
-        posthog.capture('editor_opened', {
-          source: 'landing_hero',
-          destination,
-          existing_file_count: docs.length,
-        })
-        if (docs.length > 0) {
-          await navigate({ to: '/files' })
-          return
-        }
-      } catch (err) {
-        posthog.captureException(err)
-      }
-      setNewCanvasOpen(true)
-    })()
-  }, [navigate, posthog])
 
   const activeTool = essentialTools[activeToolIndex]
   const activeToolCount = String(activeToolIndex + 1).padStart(2, '0')
@@ -410,27 +383,24 @@ function Landing() {
             </div>
 
             <div className="landing-cta-actions">
-              <button
-                type="button"
-                className="landing-primary-button inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
-                onClick={openEditor}
+              <a
+                href="/create"
+                className="landing-primary-button inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium no-underline sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
               >
-                Open editor
-              </button>
+                Create
+              </a>
               <a
                 href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/[0.14] bg-white/72 px-8 py-3.5 text-base font-medium text-[var(--text)] no-underline backdrop-blur-sm hover:border-black/[0.22] hover:bg-white sm:min-h-14 sm:px-10 sm:py-4 sm:text-[1.0625rem]"
               >
-                View on GitHub
+                GitHub
               </a>
             </div>
           </div>
         </div>
       </section>
-
-      <NewCanvasDialog open={newCanvasOpen} onClose={() => setNewCanvasOpen(false)} />
     </main>
   )
 }
