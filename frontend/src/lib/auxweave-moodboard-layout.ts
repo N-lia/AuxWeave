@@ -138,12 +138,8 @@ function createImageObject(params: {
  * on a dedicated canvas artboard.
  */
 export function generateMoodboardCanvasPage(board: Moodboard): MoodboardCanvasLayout {
-  const items = board.items || []
-  const palette = board.colorPalette || []
-
   const ARTBOARD_W = 1920
   const HEADER_H = 130
-  const SWATCH_H = palette.length > 0 ? 140 : 40
   const MARGIN_X = 64
   const AVAILABLE_W = ARTBOARD_W - MARGIN_X * 2
 

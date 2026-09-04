@@ -15,7 +15,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Auxweave_MOODBOARD_UPDATED_EVENT,
   createEmptyMoodboard,
-  extractImageColors,
   imageSignature,
   loadActiveMoodboardId,
   loadMoodboardsFromStorage,
@@ -173,24 +172,20 @@ export default function EditorMoodboardsPanel({
         return
       }
 
-      const processed: MoodboardItem[] = await Promise.all(
-        fresh.map(async entry => ({
-          id: `mb-item-${crypto.randomUUID()}`,
-          url: entry.dataUrl,
-          source: entry.source,
-          title: entry.title,
-          colors: await extractImageColors(entry.dataUrl).catch(() => undefined),
-          addedAt: Date.now(),
-        })),
-      )
+      const processed: MoodboardItem[] = fresh.map(entry => ({
+        id: `mb-item-${crypto.randomUUID()}`,
+        url: entry.dataUrl,
+        source: entry.source,
+        title: entry.title,
+        addedAt: Date.now(),
+      }))
 
       setBoards(prev => {
         const base = createdBoard ? [createdBoard, ...prev] : prev
         return base.map(board => {
           if (board.id !== targetId) return board
           const items = [...processed, ...board.items]
-          const colorPalette = Array.from(new Set(items.flatMap(i => i.colors || []))).slice(0, 8)
-          return { ...board, items, colorPalette }
+          return { ...board, items }
         })
       })
       if (createdBoard) setActiveBoardId(createdBoard.id)
@@ -289,8 +284,7 @@ export default function EditorMoodboardsPanel({
       prev.map(board => {
         if (board.id !== activeBoard.id) return board
         const remaining = board.items.filter(i => i.id !== itemId)
-        const colorPalette = Array.from(new Set(remaining.flatMap(i => i.colors || []))).slice(0, 8)
-        return { ...board, items: remaining, colorPalette }
+        return { ...board, items: remaining }
       }),
     )
   }
@@ -299,7 +293,7 @@ export default function EditorMoodboardsPanel({
     setBoards(prev =>
       prev.map(b => {
         if (b.id !== boardId) return b
-        return { ...b, items: [], colorPalette: [] }
+        return { ...b, items: [] }
       }),
     )
     showNotice('Cleared all references in board')
@@ -535,7 +529,7 @@ export default function EditorMoodboardsPanel({
                 </div>
                 <p className="text-[11px] text-neutral-600 leading-relaxed">
                   Display this moodboard on its own dedicated artboard with auto-arranged
-                  proportions and AI palette swatches.
+                  proportions and visual hierarchy.
                 </p>
                 <button
                   type="button"
@@ -608,19 +602,6 @@ export default function EditorMoodboardsPanel({
                         <span className="absolute top-1.5 left-1.5 rounded-md bg-black/60 backdrop-blur-sm px-1.5 py-0.5 text-[9px] font-semibold text-white uppercase tracking-wider">
                           {item.source}
                         </span>
-                      ) : null}
-
-                      {/* Item Color Palette Bar */}
-                      {item.colors && item.colors.length > 0 ? (
-                        <div className="absolute bottom-1.5 left-1.5 flex gap-1 rounded-md bg-white/90 p-1 shadow-sm backdrop-blur-sm">
-                          {item.colors.slice(0, 3).map(c => (
-                            <span
-                              key={c}
-                              className="h-2.5 w-2.5 rounded-full border border-black/10"
-                              style={{ backgroundColor: c }}
-                            />
-                          ))}
-                        </div>
                       ) : null}
 
                       {/* Hover Overlay Actions */}

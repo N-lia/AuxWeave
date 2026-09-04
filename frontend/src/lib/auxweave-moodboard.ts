@@ -209,8 +209,7 @@ export function appendMoodboardItem(
   const nextBoards = boards.map(board => {
     if (board.id !== targetId) return board
     const items = [newItem, ...board.items]
-    const colorPalette = Array.from(new Set(items.flatMap(i => i.colors || []))).slice(0, 8)
-    return { ...board, items, colorPalette }
+    return { ...board, items }
   })
 
   saveMoodboardsToStorage(nextBoards, activeDocId)
@@ -218,55 +217,10 @@ export function appendMoodboardItem(
 }
 
 /**
- * Helper to extract dominant hex colors from an image URL using HTML Canvas
+ * Deprecated: Auto color extraction has been removed to prevent bias on AI models.
  */
-export async function extractImageColors(imageUrl: string, count = 4): Promise<string[]> {
-  return new Promise(resolve => {
-    const timer = setTimeout(() => resolve(['#2b2d42', '#8d99ae']), 1500)
-    const img = new Image()
-    img.crossOrigin = 'Anonymous'
-    img.src = imageUrl
-    img.onload = () => {
-      clearTimeout(timer)
-      try {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return resolve(['#000000', '#ffffff'])
-        canvas.width = 64
-        canvas.height = 64
-        ctx.drawImage(img, 0, 0, 64, 64)
-        const imgData = ctx.getImageData(0, 0, 64, 64).data
-
-        const colorMap = new Map<string, number>()
-        for (let i = 0; i < imgData.length; i += 16) {
-          const r = imgData[i]
-          const g = imgData[i + 1]
-          const b = imgData[i + 2]
-          const a = imgData[i + 3]
-          if (a < 128) continue
-          // Round colors to bucket
-          const qr = Math.round(r / 32) * 32
-          const qg = Math.round(g / 32) * 32
-          const qb = Math.round(b / 32) * 32
-          const hex = `#${((1 << 24) + (qr << 16) + (qg << 8) + qb).toString(16).slice(1)}`
-          colorMap.set(hex, (colorMap.get(hex) || 0) + 1)
-        }
-
-        const sorted = Array.from(colorMap.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, count)
-          .map(([hex]) => hex)
-
-        resolve(sorted.length > 0 ? sorted : ['#2b2d42', '#ef233c'])
-      } catch {
-        resolve(['#2b2d42', '#8d99ae'])
-      }
-    }
-    img.onerror = () => {
-      clearTimeout(timer)
-      resolve(['#2b2d42', '#8d99ae'])
-    }
-  })
+export async function extractImageColors(_imageUrl: string, _count = 4): Promise<string[]> {
+  return []
 }
 
 /**

@@ -19,7 +19,7 @@ export const getMoodboardContentTool: WebMCPTool = {
   name: 'get_moodboard_content',
   title: 'Get Moodboard Images & Visual References',
   description:
-    "Retrieves the active moodboard references, including all inspiration images (URLs, titles, source, dimensions, color palettes), tags, descriptions, and dominant color palette. The agent should use this tool to inspect reference imagery, color schemes, and aesthetic direction from the user's moodboard.",
+    "Retrieves the active moodboard references, including inspiration images (URLs, titles, source, dimensions), tags, and descriptions. The agent should use this tool to inspect reference imagery and aesthetic direction from the user's moodboard.",
   inputSchema: {
     type: 'object',
     properties: {
@@ -71,7 +71,6 @@ export const getMoodboardContentTool: WebMCPTool = {
         name: activeBoard.name,
         description: activeBoard.description || '',
         tags: activeBoard.tags || [],
-        colorPalette: activeBoard.colorPalette || [],
         itemCount: items.length,
         items: items.map(item => ({
           id: item.id,
@@ -80,7 +79,6 @@ export const getMoodboardContentTool: WebMCPTool = {
           source: item.source || 'upload',
           width: item.width,
           height: item.height,
-          colors: item.colors || [],
         })),
       },
       allBoardsSummary: boards.map(b => ({
@@ -305,15 +303,6 @@ export const analyzeMoodboardReferenceTool: WebMCPTool = {
       }
     }
 
-    const colors =
-      targetItem.colors && targetItem.colors.length > 0
-        ? targetItem.colors
-        : activeBoard?.colorPalette || ['#0B0F19', '#7C3AED', '#FFFFFF']
-
-    const bgHex = colors[0] || '#0B0F19'
-    const accentHex = colors[1] || '#7C3AED'
-    const textHex = colors.length > 2 ? colors[2] : '#FFFFFF'
-
     const w = targetItem.width || 1080
     const h = targetItem.height || 1080
     const ratio = w / h
@@ -327,12 +316,6 @@ export const analyzeMoodboardReferenceTool: WebMCPTool = {
         orientation,
         aspectRatio: `${w}:${h}`,
       },
-      colorRoles: {
-        background: bgHex,
-        primaryAccent: accentHex,
-        headlineText: textHex,
-        suggestedPalette: colors,
-      },
       layoutZones: {
         hero: { zone: 'top-or-center', suggestedRole: 'Place hero imagery or graphic backdrop' },
         headline: {
@@ -345,11 +328,11 @@ export const analyzeMoodboardReferenceTool: WebMCPTool = {
         },
       },
       recommendedActionPlan: [
-        `1. Create background container or canvas fill with ${bgHex}`,
+        '1. Create background container or canvas fill matching the mood and aesthetic of the reference',
         `2. Place reference photo or graphic using place_moodboard_image (itemId: "${targetItem.id}")`,
-        `3. Add prominent headline and subtitle with add_text_element using contrasting text color (${textHex})`,
-        `4. Add button/accent shapes with add_shape_primitive using accent (${accentHex})`,
-        '5. Call verify_canvas_alignment to perform visual self-correction',
+        '3. Add prominent headline and subtitle with add_text_element using contrasting typography',
+        '4. Add button/accent shapes with add_shape_primitive for visual hierarchy',
+        '5. Call verify_canvas_alignment or validate_layout to perform visual self-correction',
       ],
     }
   },

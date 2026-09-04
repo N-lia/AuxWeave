@@ -480,8 +480,8 @@ export function buildAgentSystemPrompt(
   const centerY = Math.round(artboardH / 2)
 
   const moodboardSection = moodboardSummary
-    ? `\n### 🖼️ USER MOODBOARD REFERENCES\n${moodboardSummary}\n- When reference images are attached as vision input, STUDY THEIR PIXELS FIRST: extract the actual background tone, lighting mood, and composition, and mirror them — do not fall back to a default dark canvas.\n- You can inspect these images and palettes using \`get_moodboard_content\`.\n- You can place reference images directly onto the canvas using \`place_moodboard_image\`.\n`
-    : `\n### 🖼️ USER MOODBOARD REFERENCES\n- The user has curated moodboards with visual references and inspiration.\n- Call \`get_moodboard_content\` to inspect available images, color palettes, and style tags.\n- Call \`place_moodboard_image\` to place images from the moodboard onto the canvas.\n`
+    ? `\n### USER MOODBOARD REFERENCES\n${moodboardSummary}\n- When reference images are attached as vision input, study their visual composition, lighting, and aesthetic mood.\n- You can inspect these images using \`get_moodboard_content\`.\n- You can place reference images directly onto the canvas using \`place_moodboard_image\`.\n`
+    : `\n### USER MOODBOARD REFERENCES\n- The user has curated moodboards with visual references and inspiration.\n- Call \`get_moodboard_content\` to inspect available images and style tags.\n- Call \`place_moodboard_image\` to place images from the moodboard onto the canvas.\n`
 
   return `You are the Auxweave Co-Design Agent — an expert graphic designer, art director, and layout specialist embedded inside the Auxweave vector canvas editor. You manipulate the user's vector canvas in real-time by calling available creation, positioning, and editing tools.
 
@@ -1272,7 +1272,7 @@ export async function executeAgentTurn(
           i =>
             `[ID: ${i.id}] "${i.title || 'Image'}" (URL: ${i.url.startsWith('data:') ? `[embedded-image: ${i.id}]` : i.url})`,
         )
-        .join(', ')}. Dominant palette: ${activeBoard.colorPalette?.join(', ') || 'N/A'}.`
+        .join(', ')}.`
       if (endpointSupportsVision(getStoredEndpoint())) {
         const picked = selectVisionImages(activeBoard.items)
         const prepared = await Promise.all(
@@ -1285,7 +1285,7 @@ export async function executeAgentTurn(
         )
         visionImages = prepared.filter((v): v is MoodboardVisionImage => v !== null)
         if (visionImages.length > 0) {
-          moodboardSummary += ` ${visionImages.length} reference image(s) are attached as vision input to this request — STUDY THEIR ACTUAL PIXELS (mood, lighting, composition, dominant colors) and let them drive your palette and layout choices, instead of defaulting to a black background.`
+          moodboardSummary += ` ${visionImages.length} reference image(s) are attached as vision input to this request — STUDY THEIR ACTUAL PIXELS (mood, lighting, composition, aesthetics) and let them inspire your design and layout choices.`
         }
       }
     }
