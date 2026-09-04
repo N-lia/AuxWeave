@@ -221,7 +221,7 @@ function Landing() {
               A web-native creative canvas where AI agents design with humans.
             </h1>
             <p className="mb-8 max-w-xl text-base leading-relaxed text-[var(--text-muted)] sm:text-lg">
-              Direct spatial manipulation meets autonomous multi-turn vector editing on a live artboard powered by W3C WebMCP.
+              Describe the design. Drag it into place. The agent sweats the geometry — you keep the taste.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <button

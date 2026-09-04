@@ -41,29 +41,6 @@ type Props = {
   onToggleActive: () => void
 }
 
-const QUICK_PROMPTS = [
-  {
-    title: 'HIV Awareness Flyer',
-    prompt:
-      'Create a powerful, high-impact flyer for an HIV Awareness campaign with creative obsidian and crimson color choices, bold typography hierarchy, and an educational U=U callout.',
-  },
-  {
-    title: 'SIGNAL // 2025 Poster',
-    prompt:
-      'Design the "SIGNAL // 2025" Tech Conference Poster. Palette: Deep Obsidian #0B0F19 background, Electric Cyan #22D3EE accents, white headline "SIGNAL 2025", subtitle "The Future of AI, Infrastructure & Design Systems", and session pill tags (AI & ML, DEVOPS, DESIGN SYSTEMS, SECURITY).',
-  },
-  {
-    title: 'Hero Title & Tag',
-    prompt:
-      'Add a prominent headline with a category pill badge above it, perfectly centered and balanced.',
-  },
-  {
-    title: 'Balance & Contrast',
-    prompt:
-      'Analyze the current canvas layout and adjust typography and color contrast for maximum visual punch.',
-  },
-]
-
 function formatToolSummary(toolName: string, args: Record<string, unknown>): string {
   switch (toolName) {
     case 'add_text_element': {
@@ -429,9 +406,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-900 truncate">
-                AI Agent
-              </span>
+              <span className="text-sm font-semibold text-neutral-900 truncate">AI Agent</span>
               <span
                 className={[
                   'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border shrink-0',
@@ -554,9 +529,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
           {/* API Key Card */}
           <div className="rounded-2xl border border-black/[0.08] bg-white p-4 space-y-3 shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-neutral-900 text-xs">
-                AgentRouter API Key
-              </span>
+              <span className="font-semibold text-neutral-900 text-xs">AgentRouter API Key</span>
               <a
                 href="https://agentrouter.org"
                 target="_blank"
@@ -567,8 +540,7 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
               </a>
             </div>
             <p className="text-[11px] text-neutral-600 leading-relaxed">
-              All inference runs through AgentRouter. Your key is stored locally in your
-              browser.
+              All inference runs through AgentRouter. Your key is stored locally in your browser.
             </p>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -875,33 +847,9 @@ export default function EditorAgentPanel({ open, onClose, active, onToggleActive
                     What would you like to design?
                   </h3>
                   <p className="text-xs text-neutral-500 max-w-[280px] mx-auto mt-1 leading-relaxed">
-                    Powered by AgentRouter. Direct the agent to layout posters, compute
-                    spatial coordinates, and generate graphics.
+                    Powered by AgentRouter. Direct the agent to layout posters, compute spatial
+                    coordinates, and generate graphics.
                   </p>
-                </div>
-
-                {/* Quick Prompts */}
-                <div className="space-y-1.5 pt-2 text-left">
-                  <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider px-1">
-                    Quick Suggestions
-                  </span>
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {QUICK_PROMPTS.map((qp, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleSendPrompt(qp.prompt)}
-                        className="rounded-2xl border border-black/[0.06] bg-white p-2.5 text-left hover:border-blue-300 hover:bg-blue-50/30 transition shadow-2xs group"
-                      >
-                        <div className="text-xs font-semibold text-neutral-900 group-hover:text-blue-900">
-                          {qp.title}
-                        </div>
-                        <div className="text-[11px] text-neutral-500 truncate mt-0.5">
-                          {qp.prompt}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
             ) : null}
