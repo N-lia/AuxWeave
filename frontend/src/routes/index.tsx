@@ -6,7 +6,7 @@ import {
   TextBoldIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   motion,
   useInView,
@@ -154,12 +154,12 @@ function Landing() {
               Create, compose, and iterate with AI that can actually work inside your design.
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <a
-                href="/create"
+              <Link
+                to="/create"
                 className="bg-black text-white inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium no-underline shadow-lg shadow-black/10 transition-all hover:bg-neutral-800 hover:scale-[1.02] active:scale-[0.98] sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
               >
                 Create
-              </a>
+              </Link>
               <a
                 href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
@@ -383,12 +383,12 @@ function Landing() {
             </div>
 
             <div className="landing-cta-actions">
-              <a
-                href="/create"
+              <Link
+                to="/create"
                 className="landing-primary-button inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-0 px-10 py-3.5 text-base font-medium no-underline sm:min-h-14 sm:px-12 sm:py-4 sm:text-[1.0625rem]"
               >
                 Create
-              </a>
+              </Link>
               <a
                 href="https://github.com/N-lia/AuxWeave"
                 target="_blank"
