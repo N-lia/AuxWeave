@@ -6,26 +6,6 @@
       "destination": "https://agentrouter.org/$1"
     },
     {
-      "source": "/create(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/files(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/editor(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/components(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/remove-bg(.*)",
-      "destination": "/index.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
