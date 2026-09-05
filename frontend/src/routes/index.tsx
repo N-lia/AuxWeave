@@ -5,7 +5,7 @@ import {
   Image01Icon,
   TextBoldIcon,
 } from '@hugeicons/core-free-icons'
-import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   motion,

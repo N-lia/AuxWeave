@@ -100,6 +100,26 @@ export const DEFAULT_PALETTE_NAME = 'noir-crimson'
 
 export function getPalette(name?: string): DesignPalette {
   if (name && CINEMATIC_PALETTES[name]) return CINEMATIC_PALETTES[name]!
+  if (name && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(name.trim())) {
+    const bg = name.trim()
+    const hex = bg.replace('#', '')
+    const r = Number.parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16)
+    const g = Number.parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16)
+    const b = Number.parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    const isLight = luminance > 0.5
+    return {
+      name: 'extracted-reference',
+      description: 'Dynamically extracted from reference flyer.',
+      background: bg,
+      surface: isLight ? '#FFFFFF' : '#1E2433',
+      ink: isLight ? '#111827' : '#F9FAFB',
+      muted: isLight ? '#6B7280' : '#9CA3AF',
+      accent: isLight ? '#2563EB' : '#38BDF8',
+      accent2: isLight ? '#D97706' : '#F43F5E',
+      onAccent: '#FFFFFF',
+    }
+  }
   return CINEMATIC_PALETTES[DEFAULT_PALETTE_NAME]!
 }
 
@@ -562,11 +582,13 @@ export function describeDesignLanguage(): string {
     .join('\n')
   return [
     `Auxweave Design Language v${DESIGN_LANGUAGE_VERSION}.`,
-    'Palettes (use ROLES, never raw hex):',
+    'Palette Strategy: DYNAMIC REFERENCE EXTRACTION. Extract authentic color roles from the moodboard reference flyer instead of choosing from hardcoded palettes.',
+    'Color roles: background (canvas backdrop), surface (cards/panels), ink (text contrast >= 4.5:1), muted (secondary text), accent (focal pop).',
+    'Reference Presets (optional fallback):',
     palettes,
     'Type roles: badge / headline / subtitle / body / caption (sizes auto-scale to canvas).',
     'Semantic regions: header / hero / body / footer (+ safe, left/center/right).',
-    'Prefer apply_poster_template for full flyers; then validate_layout → repair_layout → verify_canvas_alignment.',
+    'Sequential Workflow: 1. Understand Colors -> 2. Understand Text Properties -> 3. Design Layout -> 4. Design Elements (or apply_poster_template) -> 5. validate_layout -> repair_layout -> verify_canvas_alignment.',
     `Rules: ${COMPOSITION_RULES.join(' ')}`,
   ].join('\n')
 }

@@ -10,10 +10,8 @@
  */
 
 import {
-  CINEMATIC_PALETTES,
   COMPOSITION_RULES,
   DEFAULT_FONT_PAIRING_NAME,
-  DEFAULT_PALETTE_NAME,
   DESIGN_LANGUAGE_VERSION,
   FONT_PAIRINGS,
   POSTER_TEMPLATES,
@@ -92,7 +90,7 @@ export const getDesignLanguageTool: WebMCPTool = {
   name: 'get_design_language',
   title: 'Get Design Language Tokens',
   description:
-    'Returns the Auxweave Design Language: version, cinematic palettes with semantic color roles, font pairings, poster templates with slot anatomy, and composition rules. Call this before hand-building a flyer so colors, type, and zones stay on-system.',
+    'Returns the Auxweave Design Language: semantic color roles (derived dynamically from moodboard reference flyers, never hardcoded), font pairings, poster templates with slot anatomy, and composition rules.',
   inputSchema: {
     type: 'object',
     properties: {},
@@ -105,9 +103,26 @@ export const getDesignLanguageTool: WebMCPTool = {
     return {
       success: true,
       version: DESIGN_LANGUAGE_VERSION,
-      defaultPalette: DEFAULT_PALETTE_NAME,
+      paletteStrategy: 'dynamic-reference-extraction',
+      paletteExtractionNotice:
+        'DO NOT use hardcoded palettes. Always analyze the moodboard reference flyer to extract real background, ink, muted, and accent colors.',
+      colorRoles: [
+        {
+          role: 'background',
+          description: 'Dominant canvas backdrop, derived directly from reference flyer pixels.',
+        },
+        { role: 'surface', description: 'Card or section background surface color.' },
+        {
+          role: 'ink',
+          description:
+            'Primary headline and body text color (contrast >= 4.5:1 against background).',
+        },
+        { role: 'muted', description: 'Secondary text, kicker labels, and metadata color.' },
+        { role: 'accent', description: 'Primary CTA, hero badge, or focal highlight color.' },
+        { role: 'accent2', description: 'Secondary accent or complementary accent color.' },
+        { role: 'onAccent', description: 'Text color readable on top of accent.' },
+      ],
       defaultFontPairing: DEFAULT_FONT_PAIRING_NAME,
-      palettes: Object.values(CINEMATIC_PALETTES),
       fontPairings: Object.values(FONT_PAIRINGS),
       templates: Object.values(POSTER_TEMPLATES).map(t => ({
         name: t.name,
@@ -150,7 +165,8 @@ export const applyPosterTemplateTool: WebMCPTool = {
       footer: { type: 'string', description: 'Bottom metadata, e.g. "PG-13 · 2 HR 11 MIN".' },
       palette: {
         type: 'string',
-        description: 'Palette name (default "noir-crimson"). See get_design_language.',
+        description:
+          'Optional background color hex or custom palette name derived dynamically from the moodboard reference flyer.',
       },
       fontPairing: {
         type: 'string',

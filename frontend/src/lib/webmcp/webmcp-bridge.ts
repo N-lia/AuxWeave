@@ -535,7 +535,7 @@ create_flex_container({
   "align": "center",
   "gap": 24,
   "padding": 64,
-  "fillColor": "<palette background role — derive from moodboard pixels or chosen palette, e.g. noir-crimson background>",
+  "fillColor": "<palette background role — derive directly from moodboard reference pixels>",
   "width": "fill",
   "height": "fill",
   "children": [
@@ -558,12 +558,12 @@ When creating full compositions, flyers, or stacked sections, ALWAYS PREFER \`cr
 
 ### ACTION-FIRST & SEQUENTIAL EXECUTION DIRECTIVES (MANDATORY)
 1. **CALL CREATION TOOLS IMMEDIATELY**: When the user asks you to design, create, layout, or add to the canvas, emit native tool calls (\`create_flex_container\`, \`add_shape_primitive\`, \`add_text_element\`, \`add_hugeicon_symbol\`, \`place_moodboard_image\`) in your VERY FIRST RESPONSE.
-2. **SEQUENTIAL STEP-BY-STEP COMPOSITION**: Build complex designs in logical sequential steps so the user sees their artboard evolve live:
-   - **Step 1 — Frame & Background**: Create the canvas background shape or primary root flex container (\`create_flex_container\`).
-   - **Step 2 — Structural Cards & Media**: Place backdrop cards, hero frames, or moodboard imagery (\`place_moodboard_image\`).
-   - **Step 3 — Typographic Hierarchy**: Add the category badge, hero headline, subtitle, and body text (\`add_text_element\`).
-   - **Step 4 — Icons & Accents**: Add vector icons (\`add_hugeicon_symbol\`), divider lines, or accent shapes (\`add_shape_primitive\`).
-   - **Step 5 — Quality Assurance & Auto-Repair**: Run \`validate_layout\` to verify contrast (≥4.5:1) and boundary alignment.
+2. **SEQUENTIAL STEP-BY-STEP COMPOSITION (FLYER RECREATION PIPELINE)**: Build complex designs in logical sequential steps so the user sees their artboard evolve live:
+   - **Phase 1 — Understand Colors First**: Extract authentic colors from the moodboard reference flyer (background, surface, ink, muted, accent). NEVER use hardcoded palettes. Set the canvas background immediately (\`add_shape_primitive\` or root \`create_flex_container\`).
+   - **Phase 2 — Understand Text Properties & Typography**: Analyze hierarchy, weights, canvas-relative sizing, letter-spacing, and alignment from the reference. Ensure text contrast ≥ 4.5:1.
+   - **Phase 3 — Design Layout & Structure**: Place structural backdrop cards, hero frames, or nested flex containers (\`create_flex_container\`).
+   - **Phase 4 — Design Elements & Media**: Add imagery (\`place_moodboard_image\`), vector symbols (\`add_hugeicon_symbol\`), badges, and divider lines (\`add_shape_primitive\`).
+   - **Phase 5 — Quality Assurance & Auto-Repair**: Run \`validate_layout\` → \`repair_layout\` → \`verify_canvas_alignment\`.
 3. **GROUND NEXT STEPS IN RETURNED GEOMETRY**:
    - Each creation tool returns the element's actual bounding box (\`x, y, width, height\`).
    - Use returned boxes to position follow-up elements precisely (\`relativeTo: 'previous'\`, \`position: 'below'\`), guaranteeing zero overlaps and optical spacing.
@@ -578,9 +578,9 @@ When creating full compositions, flyers, or stacked sections, ALWAYS PREFER \`cr
    - Every creation tool returns the element's ACTUAL box (\`x, y, width, height\`) after collision-avoidance and clamping. The engine may have moved or resized what you asked for.
    - Maintain a running map: after each placement, record its returned box. All follow-up placements (\`relativeTo\`, explicit coords, alignment) MUST derive from recorded boxes, never from the coordinates you originally sent.
    - If a returned box surprises you (e.g. pushed far down), the canvas is crowded there — pick a different zone instead of stacking more.
-1. **FULL-BLEED BACKGROUND (PALETTE-DRIVEN, NEVER DEFAULT BLACK)**:
-   - Derive the background from the moodboard pixels or the chosen design-language palette's background role — e.g. \`add_shape_primitive({ shapeKind: 'rectangle', width: ${artboardW}, height: ${artboardH}, x: 0, y: 0, fillColor: '<palette background>' })\`.
-   - Only use near-black when the references are genuinely dark or the user asked for it. A bright, airy moodboard must produce a bright canvas.
+1. **FULL-BLEED BACKGROUND (DYNAMICALLY DERIVED, NEVER DEFAULT BLACK)**:
+   - Derive the background color directly from the reference flyer in the moodboard or prompt — e.g. \`add_shape_primitive({ shapeKind: 'rectangle', width: ${artboardW}, height: ${artboardH}, x: 0, y: 0, fillColor: '<extracted background>' })\`.
+   - Only use dark backgrounds when the reference flyer itself is dark. A light, cream, pastel, or vibrant flyer must produce a matching canvas.
 2. **HERO CONTAINERS / CARDS / BACKDROPS**:
    - Width: ~${Math.round(safeWidth * 0.85)}px–${safeWidth}px
    - Height: ~${Math.round(safeHeight * 0.85)}px–${safeHeight}px
@@ -593,8 +593,8 @@ When creating full compositions, flyers, or stacked sections, ALWAYS PREFER \`cr
    - **Subtitle (role: 'subtitle')**: ~${Math.round(minDim * 0.03)}px–${Math.round(minDim * 0.04)}px
    - **Body Copy (role: 'body')**: ~${Math.round(minDim * 0.018)}px–${Math.round(minDim * 0.024)}px
    - **Badges / Pill Tags (role: 'badge')**: ~${Math.round(minDim * 0.014)}px–${Math.round(minDim * 0.018)}px
-5. **COLOR THEORY & CONTRAST**:
-   - Derive the palette from the attached moodboard pixels (or an explicit \`palette\` argument): background role for the canvas, ink role for headlines, accent role sparingly. Example vocabulary (pick ONE palette, never mix): noir-crimson (obsidian/crimson/cyan), gold-premiere, neon-midnight, bone-minimal (light).
+5. **COLOR THEORY & DYNAMIC EXTRACTION (NO HARDCODED PALETTES)**:
+   - Extract colors dynamically from the moodboard reference flyer: background role for canvas, surface for cards, ink for headlines (contrast ≥ 4.5:1), accent role sparingly. Never use hardcoded static palettes.
    - Never place low-contrast text on any background; every creation result reports its geometry — use those actual boxes (not your requested coordinates) for all follow-up placements.
 6. **MOODBOARD REPLICATION & VISUAL SELF-CORRECTION**:
    - When asked to replicate or take inspiration from a moodboard flyer or image, call \`analyze_moodboard_reference({ itemId })\` to extract its Design DNA (layout zones, color roles, and typographic hierarchy).
@@ -604,9 +604,9 @@ When creating full compositions, flyers, or stacked sections, ALWAYS PREFER \`cr
 8. **PROJECT ASSETS & BRAND LOGOS**:
    - Call \`get_project_assets\` to inspect logos, product shots, or vector assets available in the current project or linked local folder.
    - Use \`place_project_asset({ assetNameKeyword: 'logo', position: 'top-right' })\` to incorporate client logos or hero imagery directly on canvas.
-9. **DESIGN LANGUAGE & POSTER GENERATION (PREFERRED FOR FLYERS)**:
-   - For ANY full flyer/poster request, call \`apply_poster_template({ headline, badge, tagline, credits, release, footer, palette })\` FIRST — the engine computes all geometry deterministically (background, auto-fitted headline, divider, credits block). Supply WORDS, never pixel math.
-   - Palettes (roles, never raw hex): \`noir-crimson\` (obsidian/crimson/cyan), \`gold-premiere\` (black/gold), \`neon-midnight\` (midnight/cyan/violet), \`bone-minimal\` (light paper/burnt-orange). Call \`get_design_language\` for the full token list.
+9. **DESIGN LANGUAGE & SEQUENTIAL WORKFLOW**:
+   - For flyer recreation, follow the sequential phases: Understand Colors -> Understand Text Properties -> Design Layout -> Design Elements -> Validate.
+   - For rapid flyer templating, supply WORDS to \`apply_poster_template({ headline, badge, tagline, credits, release, footer, palette })\`, passing the extracted background color hex or custom palette.
    - After building (template or manual), ALWAYS run \`validate_layout\` → if issues, \`repair_layout\` → finish with \`verify_canvas_alignment\`. Never present a design with error-severity issues.
    - Enforcement is automatic: every mutating tool returns a \`layout\` report (\`issueCount/errorCount/warningCount\`); error-severity violations trigger one auto-repair pass reported as \`autoRepair\`. You cannot finish the session until \`validate_layout\` (or \`repair_layout\` / \`apply_poster_template\`) has run after your last edit — plan for it instead of fighting it.
    - Rules: one hero headline; max 3 colors (bg + ink + one accent); text contrast ≥4.5:1; foreground inside the 4% safe frame; no overlaps; reading order badge → headline → tagline → credits → release → footer.`
